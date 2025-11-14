@@ -1,27 +1,45 @@
-// User types
-export type UserType = 'artist' | 'band' | 'studio' | 'venue' | 'booking_agent' | 'manager';
+// ============================================================================
+// USER TYPES
+// ============================================================================
+
+export type UserType = 'user' | 'band' | 'studio' | 'bar' | 'booking_agent' | 'booking_manager';
+export type UserStatus = 'pending' | 'approved' | 'rejected' | 'deleted';
+export type AgentStatus = 'pending' | 'active' | 'suspended';
+export type SuspensionReason = 'admin_deleted' | 'payment_overdue' | 'user_deleted';
 
 export interface User {
   id: string;
-  username: string;
   email: string;
-  userType: UserType;
-  profileImage?: string;
-  bio?: string;
-  createdAt: string;
+  recovery_email?: string;
+  wallet_address?: string;
+  user_type: UserType;
+  name: string;
+  status: UserStatus;
+  requires_password_reset: boolean;
+  custom_band_limit?: number;
+  deleted_at?: string;
+  suspension_reason?: SuspensionReason;
+  is_admin_agent?: boolean;
+  agent_status?: AgentStatus;
+  created_at: string;
+  updated_at: string;
 }
 
-// Auth types
+// ============================================================================
+// AUTHENTICATION TYPES
+// ============================================================================
+
 export interface LoginCredentials {
-  username: string;
+  email: string;
   password: string;
 }
 
 export interface RegisterData {
-  username: string;
   email: string;
   password: string;
-  userType: UserType;
+  name: string;
+  user_type: UserType;
+  recovery_email?: string;
 }
 
 export interface AuthResponse {
@@ -30,217 +48,664 @@ export interface AuthResponse {
   message?: string;
 }
 
-// API Response types
-export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-  error?: string;
-}
+// ============================================================================
+// BAND TYPES
+// ============================================================================
 
-// Project types (example - adjust based on your API)
-export interface Project {
+export type BandStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Band {
   id: string;
-  title: string;
-  description: string;
-  ownerId: string;
-  collaborators: User[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Message types
-export interface Message {
-  id: string;
-  conversationId: string;
-  senderId: string;
-  content: string;
-  attachments?: MediaFile[];
-  read: boolean;
-  createdAt: string;
-}
-
-export interface Conversation {
-  id: string;
-  participants: string[];
-  lastMessage?: Message;
-  unreadCount: number;
-  updatedAt: string;
-}
-
-// Location type
-export interface Location {
-  city?: string;
-  state?: string;
-  country?: string;
-  latitude?: number;
-  longitude?: number;
-}
-
-// Media types
-export interface MediaFile {
-  id: string;
-  type: 'image' | 'audio' | 'video';
-  url: string;
-  thumbnail?: string;
-  title?: string;
+  user_id: string;
+  booking_manager_id?: string;
+  band_name: string;
   description?: string;
-  duration?: number;
-  uploadedAt: string;
-}
-
-// Booking types
-export type BookingStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'completed';
-export type BookingType = 'performance' | 'recording' | 'venue_rental';
-
-export interface BookingRequest {
-  id: string;
-  requesterId: string;
-  targetId: string;
-  type: BookingType;
-  eventDate: string;
-  endDate?: string;
-  status: BookingStatus;
-  details: string;
-  offer?: {
-    amount: number;
-    currency: string;
-    terms: string;
-  };
-  venueId?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Event types
-export interface Event {
-  id: string;
-  title: string;
-  date: string;
-  venueId?: string;
-  artistIds: string[];
-  description: string;
-  ticketUrl?: string;
-  status: 'upcoming' | 'completed' | 'cancelled';
-  createdAt: string;
-}
-
-// Extended user types
-export interface Artist extends User {
-  userType: 'artist';
-  genres?: string[];
-  instruments?: string[];
-  location?: Location;
+  genre?: string;
+  eth_wallet?: string;
   website?: string;
-  socialLinks?: {
+  social_links?: {
     instagram?: string;
     facebook?: string;
+    twitter?: string;
     spotify?: string;
     youtube?: string;
   };
-  mediaGallery?: MediaFile[];
-  verified?: boolean;
+  status: BandStatus;
+  admin_notes?: string;
+  admin_email?: string;
+  band_email?: string;
+  contact_phone?: string;
+  contact_email?: string;
+  contact_address?: string;
+  recovery_email?: string;
+  created_at: string;
+  // Joined fields from queries
+  role?: 'owner' | 'member';
+  owner_name?: string;
+  owner_email?: string;
+  booking_manager_name?: string;
+  booking_manager_email?: string;
 }
 
-export interface Band extends User {
-  userType: 'band';
-  genres?: string[];
-  members?: BandMember[];
-  location?: Location;
+export interface BandLimits {
+  maxBands: number;
+  currentCount: number;
+  canCreateMore: boolean;
+  planName: string;
+  isCustomLimit: boolean;
+}
+
+export interface CreateBandData {
+  band_name: string;
+  description?: string;
+  genre?: string;
   website?: string;
-  socialLinks?: {
-    instagram?: string;
-    facebook?: string;
-    spotify?: string;
-    youtube?: string;
-  };
-  mediaGallery?: MediaFile[];
-  verified?: boolean;
+  acknowledgeDuplicate?: boolean;
+  admin_email?: string;
+  is_solo?: boolean;
+}
+
+export interface JoinBandData {
+  band_name: string;
+  role?: string;
+}
+
+// ============================================================================
+// BAND MEMBER TYPES
+// ============================================================================
+
+export type BandMemberStatus = 'active' | 'inactive' | 'pending';
+
+export interface BandMemberPermissions {
+  can_modify_profile: boolean;
+  can_receive_band_emails: boolean;
+  can_manage_members?: boolean;
+  is_owner?: boolean;
 }
 
 export interface BandMember {
-  userId?: string;
-  name: string;
-  role: string;
-  instrument?: string;
+  id: string;
+  band_id: string;
+  user_id: string;
+  role?: string;
+  status: BandMemberStatus;
+  permissions: BandMemberPermissions;
+  joined_at: string;
+  // Joined fields
+  name?: string;
+  email?: string;
 }
 
-export interface RecordingStudio extends User {
-  userType: 'studio';
-  specifications?: string[];
-  hourlyRate?: number;
-  dailyRate?: number;
-  equipment?: string[];
-  location?: Location;
-  capacity?: number;
-  mediaGallery?: MediaFile[];
-  verified?: boolean;
-}
+// ============================================================================
+// VENUE TYPES
+// ============================================================================
 
-export interface Venue extends User {
-  userType: 'venue';
+export interface Venue {
+  id: string;
+  user_id: string;
+  venue_name: string;
+  address: string;
+  city: string;
+  state: string;
   capacity?: number;
-  location?: Location;
+  eth_wallet?: string;
+  description?: string;
   amenities?: string[];
-  technicalSpecs?: {
-    stageSize?: string;
-    soundSystem?: string;
-    lighting?: string;
-    parking?: string;
-  };
-  pricing?: {
-    baseRate?: number;
-    deposit?: number;
-    minimumSpend?: number;
-  };
-  mediaGallery?: MediaFile[];
-  verified?: boolean;
+  created_at: string;
+  // Joined fields
+  owner_name?: string;
+  email?: string;
 }
 
-export interface BookingAgent extends User {
-  userType: 'booking_agent';
-  agency?: string;
-  rosterIds?: string[];
-  specialties?: string[];
-  commission?: number;
-  location?: Location;
-  verified?: boolean;
+// ============================================================================
+// TOUR TYPES
+// ============================================================================
+
+export type TourStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
+
+export interface TourDate {
+  id: string;
+  band_id: string;
+  venue_id: string;
+  booking_agent_id?: string;
+  date: string;
+  start_time: string;
+  end_time?: string;
+  status: TourStatus;
+  payment_amount?: number;
+  payment_currency?: string;
+  payment_amount_eth?: number;
+  exchange_rate?: number;
+  notes?: string;
+  created_at: string;
+  // Joined fields from queries
+  band_name?: string;
+  venue_name?: string;
+  city?: string;
+  state?: string;
+  address?: string;
+  tour_id?: string;
+  tour_name?: string;
+  computed_status?: TourStatus;
+  payment_completed?: boolean;
+  is_upcoming?: boolean;
+  // KPI fields
+  attendance?: number;
+  bar_sales?: number;
+  new_customers?: number;
 }
 
-// Search types
-export interface SearchFilters {
-  userType?: UserType[];
-  location?: {
-    city?: string;
-    radius?: number;
-  };
-  genres?: string[];
-  priceRange?: {
-    min?: number;
-    max?: number;
-  };
-  availability?: {
-    startDate?: string;
-    endDate?: string;
-  };
-  verified?: boolean;
+export interface TourKPI {
+  id: string;
+  tour_date_id: string;
+  attendance?: number;
+  bar_sales?: number;
+  sales_currency?: string;
+  bar_sales_eth?: number;
+  exchange_rate?: number;
+  new_customers?: number;
+  notes?: string;
+  created_at: string;
+  updated_at?: string;
 }
 
-export interface SearchResult {
-  users: User[];
+export interface CreateTourData {
+  band_id: string;
+  venue_id: string;
+  date: string;
+  start_time: string;
+  end_time?: string;
+  payment_amount?: number;
+  payment_currency?: string;
+  notes?: string;
+}
+
+// ============================================================================
+// STUDIO TYPES
+// ============================================================================
+
+export interface RecordingStudio {
+  id: string;
+  user_id: string;
+  studio_name: string;
+  description?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  equipment?: any;
+  daw_software?: string;
+  hourly_rate?: number;
+  eth_wallet?: string;
+  website?: string;
+  protools_version?: string;
+  sonobus_enabled: boolean;
+  webrtc_enabled: boolean;
+  created_at: string;
+  // Joined fields
+  owner_name?: string;
+  email?: string;
+}
+
+export type SessionStatus = 'active' | 'completed' | 'cancelled';
+export type ConnectionType = 'sonobus' | 'webrtc' | 'both' | 'livekit';
+
+export interface StudioSession {
+  id: string;
+  studio_id: string;
+  band_id: string;
+  user_id?: string;
+  session_date: string;
+  start_time: string;
+  end_time?: string;
+  duration_minutes?: number;
+  connection_type?: ConnectionType;
+  session_notes?: string;
+  recording_files?: any;
+  status: SessionStatus;
+  livekit_room_name?: string;
+  created_at: string;
+}
+
+// ============================================================================
+// SUBSCRIPTION TYPES
+// ============================================================================
+
+export type BillingCycle = 'monthly' | 'yearly';
+export type SubscriptionStatus = 'active' | 'cancelled' | 'expired' | 'past_due';
+export type PaymentMethod = 'stripe' | 'eth_wallet' | 'bank_transfer' | 'paypal' | 'gift_card' | 'free';
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  user_type: UserType;
+  price_monthly: number;
+  price_yearly?: number;
+  features: string; // JSON string
+  max_bands: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserSubscription {
+  id: string;
+  user_id: string;
+  plan_id: string;
+  billing_cycle: BillingCycle;
+  status: SubscriptionStatus;
+  current_period_start: string;
+  current_period_end: string;
+  cancel_at_period_end: boolean;
+  payment_method: PaymentMethod;
+  stripe_subscription_id?: string;
+  cancelled_at?: string;
+  created_at: string;
+  updated_at: string;
+  // Joined fields
+  plan_name?: string;
+  price?: number;
+}
+
+// ============================================================================
+// PAYMENT TYPES
+// ============================================================================
+
+export type PaymentStatus = 'pending' | 'succeeded' | 'failed' | 'cancelled';
+
+export interface TourPayment {
+  id: string;
+  tour_date_id: string;
+  venue_payment_amount: number;
+  booking_agent_fee_percentage?: number;
+  booking_agent_fee_amount?: number;
+  other_fees_amount?: number;
+  total_band_payout: number;
+  payment_status: PaymentStatus;
+  payment_date?: string;
+  payment_method?: PaymentMethod;
+  transaction_hash?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TourMemberPayout {
+  id: string;
+  tour_payment_id: string;
+  user_id: string;
+  band_member_name: string;
+  payout_amount: number;
+  payout_status: PaymentStatus;
+  payment_method?: PaymentMethod;
+  transaction_hash?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// MESSAGE TYPES
+// ============================================================================
+
+export interface Message {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  encrypted_content: string;
+  sender_public_key?: string;
+  recipient_public_key?: string;
+  read: boolean;
+  created_at: string;
+  // Joined fields
+  sender_name?: string;
+  sender_user_type?: UserType;
+  recipient_name?: string;
+}
+
+export interface Conversation {
+  user_id: string;
+  name: string;
+  user_type: UserType;
+  last_message?: string;
+  last_message_time?: string;
+  unread_count: number;
+}
+
+export interface SendMessageData {
+  recipient_id: string;
+  encrypted_content: string;
+  sender_public_key?: string;
+}
+
+// ============================================================================
+// MEDIA TYPES
+// ============================================================================
+
+export type MediaType = 'image' | 'video' | 'audio' | 'document';
+
+export interface BandMedia {
+  id: string;
+  band_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+  media_type: MediaType;
+  description?: string;
+  is_public: boolean;
+  uploaded_by: string;
+  created_at: string;
+}
+
+// ============================================================================
+// GIFT CARD TYPES
+// ============================================================================
+
+export type GiftCardStatus = 'active' | 'redeemed' | 'expired' | 'cancelled';
+export type RecipientType = 'user' | 'band' | 'venue' | 'studio';
+
+export interface GiftCard {
+  id: string;
+  code: string;
+  amount: number;
+  balance: number;
+  recipient_type: RecipientType;
+  recipient_id: string;
+  issued_by: string;
+  status: GiftCardStatus;
+  expires_at?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// REVIEW TYPES
+// ============================================================================
+
+export type ReviewStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Review {
+  id: string;
+  reviewer_id: string;
+  reviewee_id: string;
+  tour_date_id?: string;
+  rating: number;
+  review_text?: string;
+  status: ReviewStatus;
+  created_at: string;
+}
+
+// ============================================================================
+// STREAMING TYPES
+// ============================================================================
+
+export interface LiveStream {
+  id: string;
+  band_id: string;
+  title: string;
+  description?: string;
+  scheduled_start: string;
+  actual_start?: string;
+  end_time?: string;
+  status: 'scheduled' | 'live' | 'ended' | 'cancelled';
+  viewer_count?: number;
+  mux_playback_id?: string;
+  livekit_room_name?: string;
+  created_at: string;
+}
+
+export interface StreamingContent {
+  id: string;
+  band_id: string;
+  title: string;
+  description?: string;
+  content_type: 'video' | 'audio' | 'live_recording';
+  mux_asset_id?: string;
+  mux_playback_id?: string;
+  duration?: number;
+  thumbnail_url?: string;
+  view_count: number;
+  published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// W-2 DOCUMENT TYPES
+// ============================================================================
+
+export interface W2Document {
+  id: string;
+  band_id: string;
+  year: number;
+  file_path: string;
+  file_name: string;
+  uploaded_at: string;
+}
+
+// ============================================================================
+// ADMIN/BOOKING MANAGER TYPES
+// ============================================================================
+
+export interface BillingAdjustment {
+  id: string;
+  user_id: string;
+  adjusted_by: string;
+  original_amount: number;
+  adjusted_amount: number;
+  discount_percentage?: number;
+  reason?: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserFeature {
+  id: string;
+  user_id: string;
+  feature_type: string;
+  feature_value?: any;
+  assigned_by: string;
+  active: boolean;
+  expires_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserState {
+  id: string;
+  user_id: string;
+  state_type: string;
+  state_value: string;
+  metadata?: any;
+  assigned_by: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ManagedUser extends User {
+  venue_name?: string;
+  band_name?: string;
+  subscriptions: UserSubscription[];
+  billing_adjustments: BillingAdjustment[];
+  features: UserFeature[];
+  states: UserState[];
+  assigned_at?: string;
+  manager_notes?: string;
+}
+
+// ============================================================================
+// DASHBOARD DATA TYPES
+// ============================================================================
+
+export interface ArtistDashboardData {
+  bands: Band[];
+  tours: TourDate[];
+  media: BandMedia[];
+  bookingAgents: User[];
+}
+
+export interface PaymentLedgerEntry extends TourMemberPayout {
+  venue_payment_amount?: number;
+  booking_agent_fee_percentage?: number;
+  booking_agent_fee_amount?: number;
+  other_fees_amount?: number;
+  total_band_payout?: number;
+  tour_payment_status?: PaymentStatus;
+  payment_date?: string;
+  tour_payment_notes?: string;
+  tour_date_id?: string;
+  tour_date?: string;
+  start_time?: string;
+  end_time?: string;
+  tour_status?: TourStatus;
+  payment_amount?: number;
+  payment_currency?: string;
+  band_id?: string;
+  band_name?: string;
+  venue_id?: string;
+  venue_name?: string;
+  city?: string;
+  state?: string;
+  tour_id?: string;
+  tour_name?: string;
+  booking_agent_name?: string;
+  booking_agent_email?: string;
+}
+
+export interface BandPaymentSummary {
+  tour_date_id: string;
+  tour_date: string;
+  start_time: string;
+  tour_status: TourStatus;
+  payment_amount?: number;
+  payment_currency?: string;
+  venue_name: string;
+  city: string;
+  state: string;
+  tour_id?: string;
+  tour_name?: string;
+  tour_payment_id?: string;
+  venue_payment_amount?: number;
+  booking_agent_fee_percentage?: number;
+  booking_agent_fee_amount?: number;
+  other_fees_amount?: number;
+  total_band_payout?: number;
+  payment_status?: PaymentStatus;
+  payment_date?: string;
+  member_count: number;
+  total_allocated: number;
+  paid_amount: number;
+}
+
+// ============================================================================
+// API RESPONSE TYPES
+// ============================================================================
+
+export interface ApiResponse<T = any> {
+  success?: boolean;
+  data?: T;
+  message?: string;
+  error?: string;
+  details?: string;
+}
+
+export interface PaginatedResponse<T = any> {
+  success: boolean;
+  items: T[];
   total: number;
   page: number;
-  perPage: number;
+  limit: number;
+  hasMore?: boolean;
 }
 
-// Notification types
-export interface Notification {
-  id: string;
-  userId: string;
-  type: 'message' | 'booking_request' | 'booking_response' | 'collaboration' | 'system';
-  title: string;
-  body: string;
-  data?: any;
-  read: boolean;
-  createdAt: string;
+// ============================================================================
+// FORM DATA TYPES
+// ============================================================================
+
+export interface UpdateBandData {
+  band_name?: string;
+  description?: string;
+  genre?: string;
+  eth_wallet?: string;
+  website?: string;
+  social_links?: any;
+  booking_manager_id?: string;
+  contact_phone?: string;
+  contact_email?: string;
+  contact_address?: string;
+  recovery_email?: string;
 }
+
+export interface UpdateUserData {
+  name?: string;
+  email?: string;
+  recovery_email?: string;
+  wallet_address?: string;
+}
+
+export interface CreateTourPaymentData {
+  tour_date_id: string;
+  venue_payment_amount: number;
+  booking_agent_fee_percentage?: number;
+  booking_agent_fee_amount?: number;
+  other_fees_amount?: number;
+  total_band_payout: number;
+  payment_method?: PaymentMethod;
+  transaction_hash?: string;
+  notes?: string;
+}
+
+export interface CreateMemberPayoutData {
+  user_id: string;
+  band_member_name: string;
+  payout_amount: number;
+  payment_method?: PaymentMethod;
+  notes?: string;
+}
+
+// ============================================================================
+// UTILITY TYPES
+// ============================================================================
+
+export interface SelectOption {
+  label: string;
+  value: string;
+}
+
+export interface Currency {
+  code: string;
+  symbol: string;
+  name: string;
+}
+
+export const CURRENCIES: Currency[] = [
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'USDC', symbol: 'USDC', name: 'USD Coin' },
+  { code: 'ETH', symbol: 'Ξ', name: 'Ethereum' },
+];
+
+export const USER_TYPE_LABELS: Record<UserType, string> = {
+  user: 'Artist',
+  band: 'Band',
+  studio: 'Recording Studio',
+  bar: 'Venue',
+  booking_agent: 'Booking Agent',
+  booking_manager: 'Booking Manager',
+};
+
+export const TOUR_STATUS_LABELS: Record<TourStatus, string> = {
+  pending: 'Pending',
+  confirmed: 'Confirmed',
+  cancelled: 'Cancelled',
+  completed: 'Completed',
+};
+
+export const PAYMENT_STATUS_LABELS: Record<PaymentStatus, string> = {
+  pending: 'Pending',
+  succeeded: 'Paid',
+  failed: 'Failed',
+  cancelled: 'Cancelled',
+};

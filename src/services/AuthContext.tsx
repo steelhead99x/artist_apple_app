@@ -1,72 +1,242 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import apiService from './api';
-
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  userType: 'artist' | 'band' | 'studio' | 'manager';
-}
+import * as LocalAuthentication from 'expo-local-authentication';
+import { Alert } from 'react-native';
+import apiService, { ApiError } from './api';
+import { User, LoginCredentials, RegisterData } from '../types';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  error: string | null;
+  biometricAvailable: boolean;
+  biometricEnabled: boolean;
+  login: (credentials: LoginCredentials, rememberMe?: boolean) => Promise<void>;
   logout: () => Promise<void>;
-  register: (data: any) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
+  refreshUser: () => Promise<void>;
+  clearError: () => void;
+  enableBiometric: () => Promise<void>;
+  disableBiometric: () => Promise<void>;
+  authenticateWithBiometric: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const BIOMETRIC_KEY = 'biometricEnabled';
+const CREDENTIALS_KEY = 'savedCredentials';
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
 
   useEffect(() => {
-    checkAuth();
+    initializeAuth();
   }, []);
 
-  const checkAuth = async () => {
+  /**
+   * Initialize authentication state
+   * Check for stored token and biometric availability
+   */
+  const initializeAuth = async () => {
     try {
+      // Check biometric availability
+      const compatible = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      setBiometricAvailable(compatible && enrolled);
+
+      // Check if biometric is enabled
+      const bioEnabled = await SecureStore.getItemAsync(BIOMETRIC_KEY);
+      setBiometricEnabled(bioEnabled === 'true');
+
+      // Try to restore session
       const token = await SecureStore.getItemAsync('authToken');
       if (token) {
-        const userData = await apiService.getCurrentUser();
-        setUser(userData);
+        try {
+          const userData = await apiService.getCurrentUser();
+          setUser(userData);
+        } catch (error) {
+          // Token expired or invalid, clear it
+          await SecureStore.deleteItemAsync('authToken');
+          await SecureStore.deleteItemAsync('userData');
+        }
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
-      await SecureStore.deleteItemAsync('authToken');
+      console.error('Auth initialization failed:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const login = async (username: string, password: string) => {
+  /**
+   * Login with email and password
+   */
+  const login = async (credentials: LoginCredentials, rememberMe: boolean = false) => {
     try {
-      const response = await apiService.login(username, password);
+      setIsLoading(true);
+      setError(null);
+
+      const response = await apiService.login(credentials);
       setUser(response.user);
-    } catch (error) {
-      throw error;
+
+      // Save credentials if remember me is checked (for biometric login)
+      if (rememberMe) {
+        await SecureStore.setItemAsync(
+          CREDENTIALS_KEY,
+          JSON.stringify(credentials)
+        );
+      }
+    } catch (err) {
+      const errorMessage = err instanceof ApiError ? err.message : 'Login failed. Please try again.';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  /**
+   * Logout
+   */
   const logout = async () => {
-    await apiService.logout();
-    setUser(null);
+    try {
+      setIsLoading(true);
+      await apiService.logout();
+      setUser(null);
+      // Optionally clear biometric settings
+      // await SecureStore.deleteItemAsync(BIOMETRIC_KEY);
+      // await SecureStore.deleteItemAsync(CREDENTIALS_KEY);
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const register = async (data: any) => {
+  /**
+   * Register new user
+   */
+  const register = async (data: RegisterData) => {
     try {
+      setIsLoading(true);
+      setError(null);
+
       const response = await apiService.register(data);
-      // Auto-login after registration
-      if (response.token) {
-        await SecureStore.setItemAsync('authToken', response.token);
+
+      // Auto-login after successful registration
+      if (response.token && response.user) {
         setUser(response.user);
       }
+    } catch (err) {
+      const errorMessage = err instanceof ApiError ? err.message : 'Registration failed. Please try again.';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Refresh user data
+   */
+  const refreshUser = async () => {
+    try {
+      const userData = await apiService.getCurrentUser();
+      setUser(userData);
     } catch (error) {
-      throw error;
+      console.error('Failed to refresh user:', error);
+      // If refresh fails, user might need to re-login
+      if (error instanceof ApiError && error.status === 401) {
+        setUser(null);
+      }
+    }
+  };
+
+  /**
+   * Clear error state
+   */
+  const clearError = () => {
+    setError(null);
+  };
+
+  /**
+   * Enable biometric authentication
+   */
+  const enableBiometric = async () => {
+    try {
+      if (!biometricAvailable) {
+        Alert.alert(
+          'Biometric Not Available',
+          'Biometric authentication is not available on this device.'
+        );
+        return;
+      }
+
+      // Test biometric authentication
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Enable biometric login',
+        cancelLabel: 'Cancel',
+        disableDeviceFallback: false,
+      });
+
+      if (result.success) {
+        await SecureStore.setItemAsync(BIOMETRIC_KEY, 'true');
+        setBiometricEnabled(true);
+        Alert.alert('Success', 'Biometric authentication enabled!');
+      }
+    } catch (error) {
+      console.error('Enable biometric error:', error);
+      Alert.alert('Error', 'Failed to enable biometric authentication.');
+    }
+  };
+
+  /**
+   * Disable biometric authentication
+   */
+  const disableBiometric = async () => {
+    try {
+      await SecureStore.deleteItemAsync(BIOMETRIC_KEY);
+      await SecureStore.deleteItemAsync(CREDENTIALS_KEY);
+      setBiometricEnabled(false);
+      Alert.alert('Success', 'Biometric authentication disabled.');
+    } catch (error) {
+      console.error('Disable biometric error:', error);
+    }
+  };
+
+  /**
+   * Authenticate with biometric
+   */
+  const authenticateWithBiometric = async (): Promise<boolean> => {
+    try {
+      if (!biometricEnabled || !biometricAvailable) {
+        return false;
+      }
+
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Log in to Artist Space',
+        cancelLabel: 'Cancel',
+        disableDeviceFallback: false,
+      });
+
+      if (result.success) {
+        // Get saved credentials
+        const credentialsJson = await SecureStore.getItemAsync(CREDENTIALS_KEY);
+        if (credentialsJson) {
+          const credentials: LoginCredentials = JSON.parse(credentialsJson);
+          await login(credentials);
+          return true;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Biometric authentication error:', error);
+      return false;
     }
   };
 
@@ -76,9 +246,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isAuthenticated: !!user,
         isLoading,
+        error,
+        biometricAvailable,
+        biometricEnabled,
         login,
         logout,
         register,
+        refreshUser,
+        clearError,
+        enableBiometric,
+        disableBiometric,
+        authenticateWithBiometric,
       }}
     >
       {children}

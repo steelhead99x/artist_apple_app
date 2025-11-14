@@ -1,0 +1,55 @@
+{
+  "name": "artist-space-backend",
+  "version": "1.0.0",
+  "description": "Artist Space Backend API - PostgreSQL & Express",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc && npm run copy-sql",
+    "copy-sql": "mkdir -p dist && cp *.sql dist/ && SQL_COUNT=$(ls -1 dist/*.sql 2>/dev/null | wc -l) && echo \"✅ Copied SQL files to dist/ (${SQL_COUNT} files)\" && if [ \"${SQL_COUNT}\" -eq \"0\" ]; then echo '❌ ERROR: No SQL files found in dist/' && exit 1; fi",
+    "start": "node dist/index.js",
+    "db:init": "node dist/scripts/initDb.js",
+    "db:migrate": "node dist/migrate.js",
+    "db:seed": "node dist/seed.js",
+    "process-recurring": "node dist/scripts/processRecurringPayments.js",
+    "generate-sitemap": "tsx src/utils/generateSitemap.ts"
+  },
+  "dependencies": {
+    "@paypal/paypal-server-sdk": "^1.1.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/uuid": "^10.0.0",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.2",
+    "braintree": "^3.34.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "csurf": "^1.11.0",
+    "decimal.js": "^10.6.0",
+    "dotenv": "^17.2.3",
+    "ethers": "^6.13.0",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.2.1",
+    "jsonwebtoken": "^9.0.2",
+    "livekit-server-sdk": "^2.0.0",
+    "multer": "^2.0.2",
+    "pg": "^8.11.3",
+    "stripe": "^19.1.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.24",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/multer": "^1.4.13",
+    "@types/node": "^20.19.23",
+    "@types/pg": "^8.10.9",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

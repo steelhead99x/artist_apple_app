@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Camera, CameraType } from 'expo-camera';
+import { Camera } from 'expo-camera';
 import apiService from '../services/api';
 import theme from '../theme';
 
@@ -42,8 +42,17 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
   const [description, setDescription] = useState('');
   const [showForm, setShowForm] = useState(true);
 
-  // Camera settings
-  const [cameraType, setCameraType] = useState<CameraType>(CameraType.front);
+  // Camera settings - only used on native platforms
+  const getCameraType = () => {
+    if (Platform.OS === 'web') return 'front';
+    try {
+      const { CameraType } = require('expo-camera');
+      return CameraType?.front || 'front';
+    } catch {
+      return 'front';
+    }
+  };
+  const [cameraType, setCameraType] = useState<any>(getCameraType());
   const [showCameraSettings, setShowCameraSettings] = useState(false);
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
@@ -77,10 +86,19 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
     if (Platform.OS === 'web' && videoRef.current && mediaStreamRef.current) {
       const video = videoRef.current as HTMLVideoElement;
       if (video && mediaStreamRef.current) {
-        video.srcObject = mediaStreamRef.current;
-        video.play().catch((err) => {
-          console.error('Failed to play video stream:', err);
-        });
+        // Only set srcObject if it's different to avoid interrupting playback
+        if (video.srcObject !== mediaStreamRef.current) {
+          video.srcObject = mediaStreamRef.current;
+          // Use a small delay to ensure the stream is ready
+          setTimeout(() => {
+            video.play().catch((err) => {
+              // Ignore AbortError as it's usually due to rapid state changes
+              if (err.name !== 'AbortError') {
+                console.error('Failed to play video stream:', err);
+              }
+            });
+          }, 100);
+        }
       }
     }
   }, [hasPermission, hasMicPermission]);
@@ -167,11 +185,25 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
         description: description.trim() || undefined,
       });
 
-      if (!response || !response.playback_url) {
+      // Handle response structure: { success, stream, mux_data }
+      const streamData = response.stream || response;
+      const playbackUrl = streamData.playback_url || response.mux_data?.playback_url;
+
+      if (!streamData || !playbackUrl) {
         throw new Error('Invalid response from server');
       }
 
-      setStream(response);
+      // Map the response to our MuxStream interface
+      const mappedStream: MuxStream = {
+        id: streamData.id,
+        stream_key: streamData.stream_key || response.mux_data?.stream_key,
+        playback_id: streamData.playback_id,
+        stream_url: streamData.stream_url || response.mux_data?.rtmp_url,
+        playback_url: playbackUrl,
+        status: streamData.status || 'idle',
+      };
+
+      setStream(mappedStream);
       setShowForm(false);
       Alert.alert(
         'Stream Created!',
@@ -304,9 +336,13 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
             const video = videoRef.current as HTMLVideoElement;
             if (video) {
               video.srcObject = newStream;
-              video.play().catch((err) => {
-                console.error('Failed to play video after switch:', err);
-              });
+              setTimeout(() => {
+                video.play().catch((err) => {
+                  if (err.name !== 'AbortError') {
+                    console.error('Failed to play video after switch:', err);
+                  }
+                });
+              }, 100);
             }
           }
         }
@@ -316,8 +352,11 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
       }
     } else {
       // Switch camera on native
-      const newType = cameraType === CameraType.front ? CameraType.back : CameraType.front;
-      setCameraType(newType);
+      const CameraTypeModule = require('expo-camera').CameraType;
+      if (CameraTypeModule) {
+        const newType = cameraType === CameraTypeModule.front ? CameraTypeModule.back : CameraTypeModule.front;
+        setCameraType(newType);
+      }
     }
   };
 
@@ -341,9 +380,13 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
         const video = videoRef.current as HTMLVideoElement;
         if (video) {
           video.srcObject = newStream;
-          video.play().catch((err) => {
-            console.error('Failed to play video:', err);
-          });
+          setTimeout(() => {
+            video.play().catch((err) => {
+              if (err.name !== 'AbortError') {
+                console.error('Failed to play video:', err);
+              }
+            });
+          }, 100);
         }
       }
     } catch (error) {
@@ -425,10 +468,19 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
                       videoRef.current = ref;
                       if (ref && mediaStreamRef.current) {
                         const video = ref as HTMLVideoElement;
-                        video.srcObject = mediaStreamRef.current;
-                        video.play().catch((err) => {
-                          console.error('Failed to play video in ref callback:', err);
-                        });
+                        // Only set if different to avoid interrupting playback
+                        if (video.srcObject !== mediaStreamRef.current) {
+                          video.srcObject = mediaStreamRef.current;
+                          // Delay play to ensure stream is ready
+                          setTimeout(() => {
+                            video.play().catch((err) => {
+                              // Ignore AbortError
+                              if (err.name !== 'AbortError') {
+                                console.error('Failed to play video in ref callback:', err);
+                              }
+                            });
+                          }, 100);
+                        }
                       }
                     }}
                     autoPlay
@@ -438,9 +490,7 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
                       width: '100%',
                       height: '100%',
                       objectFit: 'cover',
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
+                      backgroundColor: '#000',
                     }}
                   />
                   <View style={styles.cameraOverlay}>
@@ -617,9 +667,7 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
+                    backgroundColor: '#000',
                   }}
                 />
                 <View style={styles.cameraOverlay}>
@@ -928,21 +976,27 @@ const styles = StyleSheet.create({
   },
   cameraContainer: {
     width: '100%',
-    maxHeight: Platform.OS === 'web' ? 400 : 300,
-    aspectRatio: Platform.OS === 'web' ? 16 / 9 : 4 / 3,
+    maxWidth: Platform.OS === 'web' ? 800 : '100%',
+    height: Platform.OS === 'web' ? 450 : 300,
     borderRadius: theme.borderRadius.xl,
     overflow: 'hidden',
     marginBottom: theme.spacing.base,
     backgroundColor: theme.colors.gray[900],
     alignSelf: 'center',
+    position: 'relative',
   },
   camera: {
-    flex: 1,
+    width: '100%',
+    height: '100%',
+    position: 'relative',
   },
   cameraOverlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'transparent',
-    position: 'relative',
   },
   cameraControls: {
     position: 'absolute',

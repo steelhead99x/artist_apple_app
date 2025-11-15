@@ -21,7 +21,13 @@ import {
 } from '../components/common';
 import { StudioDashboardData, RecordingSession, RecordingStudio } from '../types';
 
-export default function StudioDashboardScreen({ navigation }: any) {
+interface StudioDashboardScreenProps {
+  navigation: {
+    navigate: (screen: string, params?: Record<string, unknown>) => void;
+  };
+}
+
+export default function StudioDashboardScreen({ navigation }: StudioDashboardScreenProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -37,9 +43,9 @@ export default function StudioDashboardScreen({ navigation }: any) {
       setError(null);
       const data = await studioService.getStudioDashboard();
       setDashboardData(data);
-    } catch (err: any) {
-      console.error('Load studio dashboard error:', err);
-      setError(err.message || 'Failed to load studio dashboard');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load studio dashboard';
+      setError(errorMessage);
     } finally {
       setLoading(false);
       setRefreshing(false);

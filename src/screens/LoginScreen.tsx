@@ -15,7 +15,13 @@ import { useAuth } from '../services/AuthContext';
 import { Button, Input } from '../components/common';
 import apiService from '../services/api';
 
-export default function LoginScreen({ navigation }: any) {
+interface LoginScreenProps {
+  navigation: {
+    navigate: (screen: string) => void;
+  };
+}
+
+export default function LoginScreen({ navigation }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [pinCode, setPinCode] = useState('');
@@ -47,8 +53,9 @@ export default function LoginScreen({ navigation }: any) {
         'PIN Sent',
         'A 9-digit PIN code has been sent to your email. Please check your inbox and enter the code below. The PIN will expire in 15 minutes.'
       );
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to send PIN code. Please try again.');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send PIN code. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsRequestingPin(false);
     }
@@ -76,9 +83,9 @@ export default function LoginScreen({ navigation }: any) {
     try {
       await apiService.loginWithPin(email.trim().toLowerCase(), pinCode.trim());
       // Navigation is handled by the auth state change
-    } catch (err: any) {
-      Alert.alert('Login Failed', err.message || 'Invalid or expired PIN code. Please try again.');
-      console.error('PIN login error:', err);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Invalid or expired PIN code. Please try again.';
+      Alert.alert('Login Failed', errorMessage);
     }
   };
 
@@ -104,10 +111,9 @@ export default function LoginScreen({ navigation }: any) {
     try {
       await login({ email: email.trim().toLowerCase(), password }, rememberMe);
       // Navigation is handled by the auth state change
-    } catch (err: any) {
-      const errorMessage = err?.message || 'Invalid email or password. Please try again.';
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Invalid email or password. Please try again.';
       Alert.alert('Login Failed', errorMessage);
-      console.error('Login error:', err);
     }
   };
 

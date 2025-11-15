@@ -14,7 +14,13 @@ import { bandService } from '../services';
 import { Card, LoadingSpinner, ErrorMessage, EmptyState, StatusBadge } from '../components/common';
 import { ArtistDashboardData, Band, TourDate } from '../types';
 
-export default function ArtistDashboardScreen({ navigation }: any) {
+interface ArtistDashboardScreenProps {
+  navigation: {
+    navigate: (screen: string, params?: Record<string, unknown>) => void;
+  };
+}
+
+export default function ArtistDashboardScreen({ navigation }: ArtistDashboardScreenProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -30,8 +36,9 @@ export default function ArtistDashboardScreen({ navigation }: any) {
       setError(null);
       const data = await bandService.getArtistDashboard();
       setDashboardData(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load dashboard data');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load dashboard data';
+      setError(errorMessage);
     } finally {
       setLoading(false);
       setRefreshing(false);

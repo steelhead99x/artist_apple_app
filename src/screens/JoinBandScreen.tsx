@@ -14,7 +14,13 @@ import { bandService } from '../services';
 import { Input, Button, Card, LoadingSpinner, EmptyState, StatusBadge } from '../components/common';
 import { Band } from '../types';
 
-export default function JoinBandScreen({ navigation }: any) {
+interface JoinBandScreenProps {
+  navigation: {
+    goBack: () => void;
+  };
+}
+
+export default function JoinBandScreen({ navigation }: JoinBandScreenProps) {
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [joining, setJoining] = useState(false);
@@ -35,12 +41,9 @@ export default function JoinBandScreen({ navigation }: any) {
       setSearching(true);
       const band = await bandService.getBandByJoinCode(joinCode.trim().toUpperCase());
       setSelectedBand(band);
-    } catch (err: any) {
-      console.error('Search by code error:', err);
-      Alert.alert(
-        'Band Not Found',
-        err.message || 'No band found with that join code. Please check the code and try again.'
-      );
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'No band found with that join code. Please check the code and try again.';
+      Alert.alert('Band Not Found', errorMessage);
     } finally {
       setSearching(false);
     }
@@ -63,12 +66,9 @@ export default function JoinBandScreen({ navigation }: any) {
           'No bands found matching your search. Try a different name or ask the band owner for their join code.'
         );
       }
-    } catch (err: any) {
-      console.error('Search by name error:', err);
-      Alert.alert(
-        'Search Failed',
-        err.message || 'There was a problem searching for bands. Please try again.'
-      );
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'There was a problem searching for bands. Please try again.';
+      Alert.alert('Search Failed', errorMessage);
     } finally {
       setSearching(false);
     }
@@ -101,12 +101,9 @@ export default function JoinBandScreen({ navigation }: any) {
                   ]
                 );
               }
-            } catch (err: any) {
-              console.error('Join band error:', err);
-              Alert.alert(
-                'Failed to Join Band',
-                err.message || 'There was a problem joining the band. Please try again.'
-              );
+            } catch (err) {
+              const errorMessage = err instanceof Error ? err.message : 'There was a problem joining the band. Please try again.';
+              Alert.alert('Failed to Join Band', errorMessage);
             } finally {
               setJoining(false);
             }

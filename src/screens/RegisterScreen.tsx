@@ -54,7 +54,14 @@ const USER_TYPE_OPTIONS: UserTypeOption[] = [
   },
 ];
 
-export default function RegisterScreen({ navigation }: any) {
+interface RegisterScreenProps {
+  navigation: {
+    navigate: (screen: string) => void;
+    goBack: () => void;
+  };
+}
+
+export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   const [selectedType, setSelectedType] = useState<UserType | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -153,9 +160,9 @@ export default function RegisterScreen({ navigation }: any) {
           },
         ]
       );
-    } catch (err: any) {
-      Alert.alert('Registration Failed', err.message || 'Failed to create account. Please try again.');
-      console.error('Registration error:', err);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create account. Please try again.';
+      Alert.alert('Registration Failed', errorMessage);
     } finally {
       setIsLoading(false);
     }

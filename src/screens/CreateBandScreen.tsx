@@ -20,7 +20,13 @@ const MUSIC_GENRES = [
   'Indie', 'Alternative', 'Reggae', 'Latin', 'Other'
 ];
 
-export default function CreateBandScreen({ navigation }: any) {
+interface CreateBandScreenProps {
+  navigation: {
+    goBack: () => void;
+  };
+}
+
+export default function CreateBandScreen({ navigation }: CreateBandScreenProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [isSoloArtist, setIsSoloArtist] = useState(false);
@@ -112,12 +118,9 @@ export default function CreateBandScreen({ navigation }: any) {
           ]
         );
       }
-    } catch (err: any) {
-      console.error('Create band error:', err);
-      Alert.alert(
-        'Failed to Create Band',
-        err.message || 'There was a problem creating your band. Please try again.'
-      );
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'There was a problem creating your band. Please try again.';
+      Alert.alert('Failed to Create Band', errorMessage);
     } finally {
       setLoading(false);
     }

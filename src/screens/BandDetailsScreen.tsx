@@ -23,7 +23,19 @@ import {
 } from '../components/common';
 import { Band, BandMember, TourDate, MediaFile } from '../types';
 
-export default function BandDetailsScreen({ route, navigation }: any) {
+interface BandDetailsScreenProps {
+  route: {
+    params: {
+      bandId: string;
+    };
+  };
+  navigation: {
+    navigate: (screen: string, params?: Record<string, unknown>) => void;
+    goBack: () => void;
+  };
+}
+
+export default function BandDetailsScreen({ route, navigation }: BandDetailsScreenProps) {
   const { user } = useAuth();
   const { bandId } = route.params;
 
@@ -56,9 +68,9 @@ export default function BandDetailsScreen({ route, navigation }: any) {
       setUpcomingTours(toursData.filter((t: TourDate) => t.is_upcoming).slice(0, 5));
       setMedia(mediaData.slice(0, 6));
       setIsOwner(bandData.user_id === user?.id);
-    } catch (err: any) {
-      console.error('Load band details error:', err);
-      setError(err.message || 'Failed to load band details');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load band details';
+      setError(errorMessage);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -81,8 +93,8 @@ export default function BandDetailsScreen({ route, navigation }: any) {
         message: `Join my band "${band.band_name}" on Artist Space! Use join code: ${band.join_code}`,
         title: 'Join My Band',
       });
-    } catch (err: any) {
-      console.error('Share error:', err);
+    } catch (err) {
+      // Share cancelled or failed - this is expected behavior, no action needed
     }
   };
 
@@ -136,8 +148,9 @@ export default function BandDetailsScreen({ route, navigation }: any) {
               Alert.alert('Left Band', `You've left ${band?.band_name}`, [
                 { text: 'OK', onPress: () => navigation.goBack() },
               ]);
-            } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to leave band');
+            } catch (err) {
+              const errorMessage = err instanceof Error ? err.message : 'Failed to leave band';
+              Alert.alert('Error', errorMessage);
             }
           },
         },
@@ -160,8 +173,9 @@ export default function BandDetailsScreen({ route, navigation }: any) {
               Alert.alert('Band Deleted', `${band?.band_name} has been deleted`, [
                 { text: 'OK', onPress: () => navigation.goBack() },
               ]);
-            } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to delete band');
+            } catch (err) {
+              const errorMessage = err instanceof Error ? err.message : 'Failed to delete band';
+              Alert.alert('Error', errorMessage);
             }
           },
         },

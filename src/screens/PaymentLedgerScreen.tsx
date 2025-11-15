@@ -20,7 +20,13 @@ import { TourPayment } from '../types';
 
 type FilterType = 'all' | 'pending' | 'paid' | 'failed';
 
-export default function PaymentLedgerScreen({ navigation }: any) {
+interface PaymentLedgerScreenProps {
+  navigation: {
+    navigate: (screen: string, params?: Record<string, unknown>) => void;
+  };
+}
+
+export default function PaymentLedgerScreen({ navigation }: PaymentLedgerScreenProps) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,9 +45,9 @@ export default function PaymentLedgerScreen({ navigation }: any) {
       setPayments(data.sort((a, b) =>
         new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
       ));
-    } catch (err: any) {
-      console.error('Load payments error:', err);
-      setError(err.message || 'Failed to load payment history');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load payment history';
+      setError(errorMessage);
     } finally {
       setLoading(false);
       setRefreshing(false);

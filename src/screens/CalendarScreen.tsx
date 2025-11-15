@@ -23,7 +23,13 @@ import { TourDate } from '../types';
 
 type ViewType = 'upcoming' | 'past';
 
-export default function CalendarScreen({ navigation }: any) {
+interface CalendarScreenProps {
+  navigation: {
+    navigate: (screen: string, params?: Record<string, unknown>) => void;
+  };
+}
+
+export default function CalendarScreen({ navigation }: CalendarScreenProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -58,9 +64,9 @@ export default function CalendarScreen({ navigation }: any) {
       setPastTours(past.sort((a: TourDate, b: TourDate) =>
         new Date(b.date).getTime() - new Date(a.date).getTime()
       ));
-    } catch (err: any) {
-      console.error('Load tours error:', err);
-      setError(err.message || 'Failed to load calendar');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load calendar';
+      setError(errorMessage);
     } finally {
       setLoading(false);
       setRefreshing(false);

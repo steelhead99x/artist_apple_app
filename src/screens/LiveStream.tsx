@@ -63,7 +63,11 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
       }
       // Clean up video element
       if (videoRef.current && Platform.OS === 'web') {
-        videoRef.current.srcObject = null;
+        const video = videoRef.current as HTMLVideoElement;
+        if (video) {
+          video.srcObject = null;
+          video.pause();
+        }
       }
     };
   }, []);
@@ -71,28 +75,17 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
   // Set up video stream when ref becomes available (web only)
   useEffect(() => {
     if (Platform.OS === 'web' && videoRef.current && mediaStreamRef.current) {
-      videoRef.current.srcObject = mediaStreamRef.current;
-      videoRef.current.play().catch(console.error);
+      const video = videoRef.current as HTMLVideoElement;
+      if (video && mediaStreamRef.current) {
+        video.srcObject = mediaStreamRef.current;
+        video.play().catch((err) => {
+          console.error('Failed to play video stream:', err);
+        });
+      }
     }
-  }, [hasPermission, hasMicPermission, selectedCameraId]);
+  }, [hasPermission, hasMicPermission]);
 
-  // Get available cameras (web only)
-  useEffect(() => {
-    if (Platform.OS === 'web' && hasPermission) {
-      navigator.mediaDevices.enumerateDevices().then(devices => {
-        const videoDevices = devices.filter(device => device.kind === 'videoinput');
-        setAvailableCameras(videoDevices);
-        if (videoDevices.length > 0 && !selectedCameraId) {
-          // Try to find front-facing camera first, otherwise use first available
-          const frontCamera = videoDevices.find(cam => 
-            cam.label.toLowerCase().includes('front') || 
-            cam.label.toLowerCase().includes('user')
-          );
-          setSelectedCameraId(frontCamera?.deviceId || videoDevices[0].deviceId);
-        }
-      }).catch(console.error);
-    }
-  }, [hasPermission]);
+
 
   const requestPermissions = async () => {
     try {
@@ -100,17 +93,31 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
       if (Platform.OS === 'web') {
         // Request media permissions for web
         try {
+          // First request with default camera to get permissions
           const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: selectedCameraId 
-              ? { deviceId: { exact: selectedCameraId } }
-              : { facingMode: 'user' }, 
+            video: { facingMode: 'user' }, 
             audio: true 
           });
+          
           // Store stream for preview
           mediaStreamRef.current = stream;
           
           setHasPermission(true);
           setHasMicPermission(true);
+          
+          // Now enumerate devices to get camera list
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videoDevices = devices.filter(device => device.kind === 'videoinput');
+          setAvailableCameras(videoDevices);
+          
+          if (videoDevices.length > 0 && !selectedCameraId) {
+            // Try to find front-facing camera first, otherwise use first available
+            const frontCamera = videoDevices.find(cam => 
+              cam.label.toLowerCase().includes('front') || 
+              cam.label.toLowerCase().includes('user')
+            );
+            setSelectedCameraId(frontCamera?.deviceId || videoDevices[0].deviceId);
+          }
         } catch (error) {
           console.error('Web permission error:', error);
           setHasPermission(false);
@@ -292,9 +299,15 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
           
           mediaStreamRef.current = newStream;
           
+          // Update video element with new stream
           if (videoRef.current) {
-            videoRef.current.srcObject = newStream;
-            videoRef.current.play().catch(console.error);
+            const video = videoRef.current as HTMLVideoElement;
+            if (video) {
+              video.srcObject = newStream;
+              video.play().catch((err) => {
+                console.error('Failed to play video after switch:', err);
+              });
+            }
           }
         }
       } catch (error) {
@@ -311,6 +324,7 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
   const updateWebCamera = async (cameraId: string) => {
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
     }
 
     try {
@@ -322,13 +336,24 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
       mediaStreamRef.current = newStream;
       setSelectedCameraId(cameraId);
       
+      // Update video element with new stream
       if (videoRef.current) {
-        videoRef.current.srcObject = newStream;
-        videoRef.current.play().catch(console.error);
+        const video = videoRef.current as HTMLVideoElement;
+        if (video) {
+          video.srcObject = newStream;
+          video.play().catch((err) => {
+            console.error('Failed to play video:', err);
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to update camera:', error);
-      Alert.alert('Error', 'Failed to switch camera');
+      Alert.alert('Error', 'Failed to switch camera. Please try again.');
+      // Restore previous camera on error
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+        mediaStreamRef.current = null;
+      }
     }
   };
 
@@ -396,7 +421,16 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
                 <View style={styles.camera}>
                   {/* @ts-ignore - video element for web */}
                   <video
-                    ref={videoRef}
+                    ref={(ref) => {
+                      videoRef.current = ref;
+                      if (ref && mediaStreamRef.current) {
+                        const video = ref as HTMLVideoElement;
+                        video.srcObject = mediaStreamRef.current;
+                        video.play().catch((err) => {
+                          console.error('Failed to play video in ref callback:', err);
+                        });
+                      }
+                    }}
                     autoPlay
                     playsInline
                     muted
@@ -566,7 +600,16 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
               <View style={styles.camera}>
                 {/* @ts-ignore - video element for web */}
                 <video
-                  ref={videoRef}
+                  ref={(ref) => {
+                    videoRef.current = ref;
+                    if (ref && mediaStreamRef.current) {
+                      const video = ref as HTMLVideoElement;
+                      video.srcObject = mediaStreamRef.current;
+                      video.play().catch((err) => {
+                        console.error('Failed to play video in ref callback:', err);
+                      });
+                    }
+                  }}
                   autoPlay
                   playsInline
                   muted

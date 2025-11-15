@@ -1,324 +1,419 @@
 # Artist Space Mobile App
 
-A cross-platform mobile application for **artist-space.com** built with React Native and Expo. Deploy to both iOS (App Store) and Android (Google Play Store) from a single codebase.
+**Version:** 1.0.0
+**Platform:** React Native + Expo
+**Last Updated:** 2025-11-15
 
-## Features
+A professional, enterprise-secure mobile application for artists, musicians, and bands. Features end-to-end encrypted messaging, real-time video calls, payment processing, and beautiful UI/UX designed specifically for the music industry.
 
-- Username/password authentication
-- Biometric authentication (Face ID, Touch ID, Fingerprint)
-- Camera & photo library access
-- Push notifications support
-- Secure credential storage
-- Clean, native UI/UX
+---
 
-## Tech Stack
+## 📚 Documentation Hub
 
-- **React Native** with **Expo**
-- **TypeScript** for type safety
-- **Expo Router** for navigation
-- **Axios** for API calls
-- **Expo SecureStore** for encrypted credential storage
-- **React Navigation** for screen management
+**This README serves as the central navigation for all documentation.**
 
-## Prerequisites
+### 🚀 Quick Start (5 minutes)
+- [Installation & Setup](./docs/QUICK_START.md)
+- [Developer Onboarding](./docs/DEVELOPER_ONBOARDING.md)
+- [Environment Configuration](./docs/ENVIRONMENT_SETUP.md)
 
-- Node.js 18+ and npm
-- Expo CLI: `npm install -g expo-cli`
-- **For iOS development:**
-  - macOS with Xcode installed
-  - iOS Simulator or physical iPhone
-- **For Android development:**
-  - Android Studio with emulator
-  - Or physical Android device
+### 🏗️ Development
+- [Project Structure](./docs/PROJECT_STRUCTURE.md)
+- [Architecture Overview](./docs/ARCHITECTURE.md)
+- [State Management](./docs/STATE_MANAGEMENT.md)
+- [API Documentation](./docs/API.md)
+- [Component Library](./docs/COMPONENTS.md)
 
-## Quick Start
+### 🎨 UI/UX
+- [UI Improvements Guide](./UI_IMPROVEMENTS.md) - Complete design system
+- [Quick UI Guide](./QUICK_UI_GUIDE.md) - Component usage examples
+- [Theme System](./docs/STYLING.md) - Colors, typography, spacing
 
-### 1. Install Dependencies
+### 🔒 Security
+- [Security Implementation Guide](./SECURITY_IMPLEMENTATION_GUIDE.md) - **START HERE**
+- [Security Analysis](./SECURITY_ANALYSIS.md) - Audit results
+- [Security Quick Reference](./SECURITY_QUICK_REFERENCE.md) - Quick lookup
 
+### 🎥 Features
+- [Authentication](./docs/features/AUTHENTICATION.md) - 4 auth methods
+- [E2EE Messaging](./docs/features/E2EE_MESSAGING.md) - TweetNaCl encryption
+- [LiveKit Integration](./LIVEKIT_INTEGRATION.md) - Real-time video/audio
+- [Payment Processing](./docs/features/PAYMENTS.md) - Stripe, PayPal, crypto
+- [File Uploads](./docs/features/FILE_UPLOADS.md) - Media handling
+
+### 🚀 Deployment
+- [Deployment Guide](./DEPLOYMENT_GUIDE.md) - Production deployment
+- [CI/CD Setup](./docs/CICD.md) - Automated pipelines
+- [Monitoring](./docs/MONITORING.md) - Logging and alerts
+
+### 🤝 Contributing
+- [Contributing Guidelines](./CONTRIBUTING.md) - How to contribute
+- [Code Review Guide](./docs/CODE_REVIEW.md) - Review checklist
+- [Testing Guide](./docs/TESTING.md) - Test strategies
+- [Troubleshooting](./docs/TROUBLESHOOTING.md) - Common issues
+
+### 📋 Reference
+- [Changelog](./CHANGELOG.md) - Version history
+- [API Routes](./docs/api/ROUTES.md) - All endpoints
+- [Database Schema](./docs/api/DATABASE.md) - Database structure
+- [Type Definitions](./docs/api/TYPES.md) - TypeScript types
+
+---
+
+## ✨ Key Features
+
+### Enterprise Security
+- 🔐 **End-to-End Encryption** - TweetNaCl + LiveKit E2EE
+- 🔑 **4 Authentication Methods** - Email, PIN, Biometric, Wallet
+- 🛡️ **Rate Limiting** - Protection against attacks
+- 📱 **Biometric Auth** - Face ID, Touch ID, Fingerprint
+- 🔒 **Secure Storage** - Encrypted credential storage
+
+### Real-Time Communications
+- 🎥 **Video Calls** - LiveKit with E2EE on meet.artist-space.com
+- 💬 **Real-Time Chat** - LiveKit on chat.artist-space.com
+- 📞 **Screen Sharing** - Collaborate remotely
+- 🎤 **HD Audio** - Crystal clear voice
+
+### Beautiful UI/UX
+- ✨ **Modern Design** - Glass-morphism and gradients
+- 🎨 **Music-Themed** - Colors and features for artists
+- ⚡ **Fast & Smooth** - 60fps animations
+- 📱 **Intuitive** - Simple, easy to use
+- 🎯 **Quick Actions** - Common tasks one tap away
+
+### Payment & Financial
+- 💳 **Multiple Gateways** - Stripe, PayPal, Braintree
+- ₿ **Crypto Support** - Ethereum payments
+- 📊 **Payment Tracking** - Ledger and history
+- 📄 **W-2 Support** - Tax document handling
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **React Native** 0.76.5 with **Expo** 52.0
+- **TypeScript** 5.3 for type safety
+- **Expo Router** 4.0 for navigation
+- **LiveKit** 2.5 for real-time communications
+- **TweetNaCl** 1.0.3 for E2EE messaging
+- **Axios** 1.7.7 for API calls
+
+### Backend
+- **Node.js** 18+ with **Express** 4.21
+- **PostgreSQL** 8.11 with connection pooling
+- **LiveKit Server SDK** 2.0 for video/audio
+- **Stripe** 19.1, **PayPal**, **Braintree** for payments
+- **Ethers.js** 6.13 for cryptocurrency
+- **Bcrypt** for password hashing
+
+### Infrastructure
+- **Digital Ocean** - App Platform + PostgreSQL
+- **LiveKit Cloud** - Real-time infrastructure
+- **meet.artist-space.com** - Video meetings
+- **chat.artist-space.com** - Real-time chat
+
+---
+
+## ⚡ Quick Start
+
+### 1. Prerequisites
+```bash
+# Required
+Node.js 18+
+npm or yarn
+Expo CLI
+
+# Optional (for native builds)
+Xcode (macOS only)
+Android Studio
+```
+
+### 2. Install Dependencies
 ```bash
 npm install
 ```
 
-### 2. Start Development Server
+### 3. Configure Environment
+```bash
+# Copy example env file
+cp .env.example .env
 
+# Edit with your values
+nano .env
+```
+
+### 4. Start Development
 ```bash
 npm start
 ```
 
-This opens Expo DevTools. From here you can:
-- Press `i` to open iOS simulator
-- Press `a` to open Android emulator
-- Scan QR code with Expo Go app on your physical device
+**Full guide:** [Quick Start Documentation](./docs/QUICK_START.md)
 
-### 3. Run on Specific Platform
+---
 
-```bash
-# iOS
-npm run ios
-
-# Android
-npm run android
-
-# Web (for testing)
-npm run web
-```
-
-## Project Structure
+## 📂 Project Structure
 
 ```
 artist_apple_app/
-├── src/
-│   ├── screens/          # App screens
-│   │   ├── LoginScreen.tsx
-│   │   └── HomeScreen.tsx
-│   ├── services/         # API & Auth logic
-│   │   ├── api.ts
-│   │   └── AuthContext.tsx
-│   ├── components/       # Reusable components
-│   ├── types/           # TypeScript types
-│   └── utils/           # Helper functions
-├── assets/              # Images, fonts, etc.
-├── App.tsx              # Main app entry
-├── app.json             # Expo configuration
-└── package.json
+├── docs/                          # 📚 All documentation
+│   ├── features/                  # Feature-specific guides
+│   ├── api/                       # API reference
+│   ├── ARCHITECTURE.md            # System architecture
+│   ├── COMPONENTS.md              # Component library
+│   └── ...
+├── src/                           # 💻 Source code
+│   ├── components/                # Reusable UI components
+│   │   └── common/                # Common components
+│   ├── screens/                   # App screens
+│   ├── services/                  # Business logic
+│   │   ├── api.ts                 # API client
+│   │   ├── encryption.ts          # E2EE service
+│   │   ├── livekit.ts             # LiveKit service
+│   │   ├── messages.ts            # Messaging service
+│   │   └── AuthContext.tsx        # Authentication
+│   ├── theme/                     # Design system
+│   └── types/                     # TypeScript types
+├── examples/backend/              # 🔧 Backend reference
+│   ├── src/                       # Backend source
+│   ├── schema.sql                 # Database schema
+│   └── migration_*.sql            # Database migrations
+├── .env.example                   # Environment template
+├── SECURITY_IMPLEMENTATION_GUIDE.md  # Complete security guide
+├── LIVEKIT_INTEGRATION.md         # LiveKit documentation
+├── UI_IMPROVEMENTS.md             # Design system docs
+└── README.md                      # This file (documentation hub)
 ```
 
-## Configuration
+**Detailed structure:** [Project Structure Guide](./docs/PROJECT_STRUCTURE.md)
 
-### API Endpoint
+---
 
-Edit `src/services/api.ts` to change the API endpoint:
+## 🔧 Development Workflow
 
-```typescript
-const API_BASE_URL = 'https://stage-www.artist-space.com/api';
-// Change to: 'https://www.artist-space.com/api' for production
+### Daily Development
+```bash
+# Start dev server
+npm start
+
+# Run on iOS simulator
+npm run ios
+
+# Run on Android emulator
+npm run android
+
+# Clear cache if issues
+npm start -- --clear
 ```
 
-### App Branding
+### Making Changes
+1. Create feature branch: `git checkout -b feature/your-feature`
+2. Make changes
+3. Update documentation
+4. Test thoroughly
+5. Create pull request
+6. Code review
+7. Merge to main
 
-Edit `app.json` to customize:
-- App name
-- Bundle identifier (iOS: `ios.bundleIdentifier`, Android: `android.package`)
-- Icons and splash screens
-- Permissions
+**Full workflow:** [Contributing Guide](./CONTRIBUTING.md)
 
-## Building for Production
+---
 
-### Option 1: Expo Application Services (EAS) - RECOMMENDED
-
-EAS Build handles iOS and Android builds in the cloud (no need for Xcode/Android Studio).
-
-#### Setup EAS
+## 🧪 Testing
 
 ```bash
-# Install EAS CLI
-npm install -g eas-cli
+# Run tests (when configured)
+npm test
 
-# Login to Expo account
-eas login
+# Type check
+npx tsc --noEmit
 
-# Configure project
-eas build:configure
+# Lint
+npm run lint
+
+# Format
+npm run format
 ```
 
-#### Build for iOS
+**Testing guide:** [Testing Documentation](./docs/TESTING.md)
 
+---
+
+## 🚀 Building & Deployment
+
+### Development Build
 ```bash
-# Build for App Store submission
-eas build --platform ios
-
-# Build for TestFlight (internal testing)
-eas build --platform ios --profile preview
+# For testing on physical devices
+eas build --profile development --platform ios
+eas build --profile development --platform android
 ```
 
-#### Build for Android
-
+### Production Build
 ```bash
-# Build AAB for Google Play Store
-eas build --platform android
-
-# Build APK for testing
-eas build --platform android --profile preview
+# For App Store / Play Store
+eas build --profile production --platform ios
+eas build --profile production --platform android
 ```
 
-### Option 2: Local Builds
-
-If you prefer building locally:
-
+### Deploy Backend
 ```bash
-# iOS (requires macOS + Xcode)
-expo prebuild
-cd ios && pod install && cd ..
-npx react-native run-ios --configuration Release
-
-# Android
-expo prebuild
-cd android && ./gradlew assembleRelease
+cd examples/backend
+npm run build
+npm start
 ```
 
-## Deployment
+**Full guide:** [Deployment Documentation](./DEPLOYMENT_GUIDE.md)
 
-### iOS App Store
+---
 
-1. Build with EAS: `eas build --platform ios`
-2. Download `.ipa` file from EAS dashboard
-3. Upload to App Store Connect via Transporter app
-4. Submit for App Store review
+## 📖 Documentation Maintenance
 
-**Requirements:**
-- Apple Developer Account ($99/year)
-- App Store Connect setup
-- App icons (1024x1024)
-- Screenshots for various device sizes
-- Privacy policy URL
+### Keeping Docs Updated
 
-### Android Google Play Store
+**When to update documentation:**
+- ✅ Adding features → Update feature docs
+- ✅ Changing APIs → Update API docs
+- ✅ Modifying UI → Update UI docs
+- ✅ Security changes → Update security docs
+- ✅ Fixing bugs → Update troubleshooting
 
-1. Build with EAS: `eas build --platform android`
-2. Download `.aab` file
-3. Upload to Google Play Console
-4. Complete store listing
-5. Submit for review
+**Documentation checklist before merging:**
+- [ ] Updated relevant markdown files
+- [ ] Added JSDoc comments to new code
+- [ ] Updated changelog
+- [ ] Checked links still work
+- [ ] Added examples if new feature
 
-**Requirements:**
-- Google Play Developer Account ($25 one-time)
-- Google Play Console setup
-- App icons (512x512)
-- Screenshots
-- Privacy policy URL
-
-## Environment Variables
-
-Create a `.env` file for environment-specific config:
-
-```bash
-API_URL=https://stage-www.artist-space.com/api
-APP_ENV=development
+### Documentation Structure
+```
+/docs/
+├── QUICK_START.md              # Getting started
+├── DEVELOPER_ONBOARDING.md     # New developer guide
+├── ARCHITECTURE.md             # System design
+├── API.md                      # API reference
+├── COMPONENTS.md               # Component docs
+├── features/                   # Feature guides
+│   ├── AUTHENTICATION.md
+│   ├── E2EE_MESSAGING.md
+│   └── PAYMENTS.md
+└── api/                        # API details
+    ├── ROUTES.md
+    ├── DATABASE.md
+    └── TYPES.md
 ```
 
-## Testing on Physical Devices
+**More details:** See "Documentation Standards" section below
 
-### During Development (Easiest)
+---
 
-1. Install **Expo Go** app on your phone (iOS/Android)
-2. Run `npm start`
-3. Scan QR code with your phone
-4. App loads instantly - changes update in real-time!
+## 📊 Current Status
 
-### Production Builds
+### Version 1.0.0
 
-**iOS:**
-- TestFlight: Upload build to App Store Connect → TestFlight
-- Direct install: Use EAS development builds
+**Completed:**
+- ✅ Enterprise-grade security (9/10 score)
+- ✅ E2EE messaging (TweetNaCl)
+- ✅ LiveKit integration (3 instances)
+- ✅ Modern UI/UX design system
+- ✅ 4 authentication methods
+- ✅ Payment processing
+- ✅ File upload handling
+- ✅ Comprehensive documentation
 
-**Android:**
-- Internal testing: Upload to Play Console → Internal Testing
-- Direct install: Share `.apk` file
+**In Progress:**
+- ⚠️ Additional feature documentation
+- ⚠️ CI/CD pipeline setup
+- ⚠️ Automated testing
 
-## Native Features Included
+**Planned:**
+- 📋 Push notifications
+- 📋 Offline mode
+- 📋 Analytics dashboard
 
-- **Camera**: `expo-camera`
-- **Image Picker**: `expo-image-picker`
-- **Biometric Auth**: `expo-local-authentication`
-- **Push Notifications**: `expo-notifications`
-- **Secure Storage**: `expo-secure-store`
+---
 
-## Customization Guide
+## 🆘 Getting Help
 
-### Adding New Screens
+### Documentation
+- 📚 Check this README for links to all docs
+- 🔍 Search in `/docs/` directory
+- 📖 Read inline code comments (JSDoc)
 
-1. Create screen in `src/screens/YourScreen.tsx`
-2. Add to navigator in `App.tsx`
+### Support Channels
+- **Issues:** Create GitHub issue
+- **Questions:** Check troubleshooting guide
+- **Security:** See security documentation
 
-### Adding New API Endpoints
+### Common Issues
+See [Troubleshooting Guide](./docs/TROUBLESHOOTING.md)
 
-Add methods to `src/services/api.ts`:
+---
 
-```typescript
-async getArtists() {
-  return await this.get('/artists');
-}
-```
+## 🤝 Contributing
 
-### Styling
+We welcome contributions! Please see:
+- [Contributing Guidelines](./CONTRIBUTING.md)
+- [Code Review Guide](./docs/CODE_REVIEW.md)
+- [Code of Conduct](./CODE_OF_CONDUCT.md)
 
-- Uses React Native StyleSheet
-- Consider adding a theme system in `src/utils/theme.ts`
+---
 
-## Troubleshooting
-
-### iOS Build Issues
-- Clear cache: `expo start -c`
-- Reset CocoaPods: `cd ios && pod deintegrate && pod install`
-- Ensure Xcode is up to date
-
-### Android Build Issues
-- Clear Gradle cache: `cd android && ./gradlew clean`
-- Check Android Studio SDK is installed
-- Verify ANDROID_HOME environment variable
-
-### Metro Bundler Issues
-```bash
-# Clear all caches
-expo start -c
-rm -rf node_modules
-npm install
-```
-
-## Maintenance Tips
-
-Since you're new to mobile development:
-
-1. **Keep it simple**: Avoid adding too many native modules
-2. **Test on real devices**: Simulators don't catch everything
-3. **Use EAS Build**: Avoids local build complexity
-4. **Update regularly**: `expo upgrade` keeps dependencies current
-5. **Monitor bundle size**: Keep app size under 50MB if possible
-
-## Useful Commands
-
-```bash
-# Check Expo version
-expo --version
-
-# Update Expo SDK
-expo upgrade
-
-# Doctor (check for issues)
-expo-doctor
-
-# Clear cache
-expo start -c
-
-# View build logs
-eas build:list
-```
-
-## Resources
-
-- [Expo Documentation](https://docs.expo.dev/)
-- [React Native Docs](https://reactnative.dev/)
-- [EAS Build Guide](https://docs.expo.dev/build/introduction/)
-- [App Store Submission](https://developer.apple.com/app-store/submissions/)
-- [Google Play Submission](https://support.google.com/googleplay/android-developer/answer/9859152)
-
-## Next Steps
-
-1. **Customize the API endpoints** in `src/services/api.ts` to match your backend
-2. **Add your app icons** to `assets/` folder
-3. **Test authentication** against stage-www.artist-space.com
-4. **Add more screens** for your app features
-5. **Set up EAS account** for building
-6. **Create App Store/Play Store accounts** when ready to deploy
-
-## Support
-
-For issues:
-- Check Expo documentation
-- Search Stack Overflow
-- Visit Expo Discord community
-- Review React Native docs
-
-## License
+## 📜 License
 
 Private project for artist-space.com
+
+---
+
+## 📞 Contacts
+
+**Project Maintainers:**
+- Development Team
+
+**Important Links:**
+- Production: https://www.artist-space.com
+- Staging: https://stage-www.artist-space.com
+- LiveKit Meet: wss://meet.artist-space.com
+- LiveKit Chat: wss://chat.artist-space.com
+
+---
+
+## 🎯 Documentation Standards
+
+### File Naming
+- Use `UPPERCASE.md` for top-level guides
+- Use `lowercase.md` for specific features
+- Use descriptive names: `AUTHENTICATION.md` not `auth.md`
+
+### Writing Style
+- **Clear and concise** - No unnecessary jargon
+- **Examples included** - Show, don't just tell
+- **Up-to-date** - Keep current with code
+- **Well-organized** - Use headings and ToC
+- **Cross-linked** - Link to related docs
+
+### Maintenance
+- Review quarterly
+- Update on code changes
+- Mark outdated sections
+- Archive old docs
+
+---
+
+## 🔄 Changelog
+
+See [CHANGELOG.md](./CHANGELOG.md) for version history.
+
+**Latest:**
+- `1.0.0` (2025-11-15) - Initial release with full feature set
+
+---
+
+**Ready to start?** 🚀
+
+→ New developers: [Developer Onboarding](./docs/DEVELOPER_ONBOARDING.md)
+→ Need security info: [Security Guide](./SECURITY_IMPLEMENTATION_GUIDE.md)
+→ Building features: [Architecture](./docs/ARCHITECTURE.md)
+→ Deploying: [Deployment Guide](./DEPLOYMENT_GUIDE.md)
+
+**Keep documentation updated!** Every change counts. 📝

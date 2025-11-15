@@ -11,11 +11,28 @@ import {
   AudioPresets,
   ParticipantEvent,
 } from 'livekit-client';
-import { registerGlobals } from '@livekit/react-native';
 import apiService from './api';
 
-// Register WebRTC globals for React Native
-registerGlobals();
+// Lazy load and register WebRTC globals for React Native
+// Only register if not in Expo Go (development build required)
+let globalsRegistered = false;
+function ensureGlobalsRegistered() {
+  if (globalsRegistered) return;
+  
+  try {
+    // Check if we're in a development build (not Expo Go)
+    const { Platform } = require('react-native');
+    if (Platform.OS !== 'web') {
+      // Only import and register if we have native modules available
+      const { registerGlobals } = require('@livekit/react-native');
+      registerGlobals();
+      globalsRegistered = true;
+    }
+  } catch (error) {
+    // If native module is not available (Expo Go), skip registration
+    console.warn('LiveKit native module not available. LiveKit features will be limited.');
+  }
+}
 
 /**
  * LiveKit Service Configuration
@@ -120,6 +137,9 @@ class LiveKitService {
     }
   ): Promise<Room> {
     try {
+      // Ensure globals are registered before connecting
+      ensureGlobalsRegistered();
+      
       // Get existing room or create new one
       let room = this.rooms.get(instance);
 

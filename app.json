@@ -7,13 +7,14 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.artistspace.mobile",
+      "jsEngine": "hermes",
       "infoPlist": {
         "NSCameraUsageDescription": "Artist Space needs access to your camera to upload photos and videos.",
         "NSPhotoLibraryUsageDescription": "Artist Space needs access to your photo library to upload images.",
@@ -27,6 +28,7 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.artistspace.mobile",
+      "jsEngine": "hermes",
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
@@ -57,14 +59,15 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
+          "icon": "./assets/icon.png",
           "color": "#ffffff"
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "eas": {
-        "projectId": "your-project-id-here"
+        "projectId": "dcce067a-834b-40de-9148-ae09bb6369b6"
       }
     }
   }

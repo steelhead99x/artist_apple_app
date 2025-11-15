@@ -4,6 +4,8 @@ Get your Artist Space mobile app running in 5 minutes!
 
 ## Step 1: Install Dependencies (2 minutes)
 
+bB%47hugIiPSGxBJ
+
 ```bash
 npm install
 ```

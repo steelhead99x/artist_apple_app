@@ -1,5 +1,5 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native';
+import { TouchableOpacity, Text, StyleSheet, ViewStyle, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -9,7 +9,7 @@ interface QuickActionProps {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   onPress: () => void;
-  gradient?: string[];
+  gradient?: readonly [string, string, ...string[]];
   badge?: number;
   style?: ViewStyle;
 }
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: theme.typography.sizes.xs,
-    fontWeight: theme.typography.fontWeights.semibold,
+    fontWeight: theme.typography.fontWeights.semibold as '600',
     color: theme.colors.text.secondary,
     textAlign: 'center',
   },
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 10,
-    fontWeight: theme.typography.fontWeights.bold,
+    fontWeight: theme.typography.fontWeights.bold as '700',
     color: 'white',
   },
 });

@@ -44,6 +44,11 @@ export class ApiError extends Error {
 
 class ApiService {
   private client: AxiosInstance;
+  private isRefreshing = false;
+  private failedQueue: Array<{
+    resolve: (value?: any) => void;
+    reject: (reason?: any) => void;
+  }> = [];
 
   constructor() {
     // Configure default headers for CORS on web
@@ -92,11 +97,13 @@ class ApiService {
       (error) => Promise.reject(error)
     );
 
-    // Handle responses and errors
+    // Handle responses and errors with automatic token refresh
     this.client.interceptors.response.use(
       (response) => response,
       async (error: AxiosError) => {
-        // Handle CORS errors on web platform
+        const originalRequest: any = error.config;
+
+        // Handle CORS errors on web platform (check before token refresh)
         if (IS_WEB && !error.response) {
           const isCorsError = 
             error.message?.includes('CORS') ||
@@ -114,6 +121,58 @@ class ApiService {
               undefined,
               { corsError: true, originalError: error.message, url: error.config?.url }
             );
+          }
+        }
+
+        // If 401 and we haven't tried to refresh yet
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          if (this.isRefreshing) {
+            // Wait for the current refresh to complete
+            return new Promise((resolve, reject) => {
+              this.failedQueue.push({ resolve, reject });
+            })
+              .then(() => this.client.request(originalRequest))
+              .catch((err) => Promise.reject(err));
+          }
+
+          originalRequest._retry = true;
+          this.isRefreshing = true;
+
+          try {
+            const refreshToken = await getItemAsync('refreshToken');
+            if (refreshToken) {
+              // Try to refresh the token
+              const response = await this.client.post('/auth/refresh', { refreshToken });
+
+              if (response.data.token) {
+                await setItemAsync('authToken', response.data.token);
+                if (response.data.refreshToken) {
+                  await setItemAsync('refreshToken', response.data.refreshToken);
+                }
+
+                // Update Authorization header
+                originalRequest.headers.Authorization = `Bearer ${response.data.token}`;
+
+                // Process queued requests
+                this.failedQueue.forEach(({ resolve }) => resolve());
+                this.failedQueue = [];
+
+                // Retry original request
+                return this.client.request(originalRequest);
+              }
+            }
+          } catch (refreshError) {
+            // Refresh failed, clear all auth data
+            this.failedQueue.forEach(({ reject }) => reject(refreshError));
+            this.failedQueue = [];
+
+            await deleteItemAsync('authToken');
+            await deleteItemAsync('refreshToken');
+            await deleteItemAsync('userData');
+
+            throw refreshError;
+          } finally {
+            this.isRefreshing = false;
           }
         }
 
@@ -193,6 +252,11 @@ class ApiService {
       await setItemAsync('userData', JSON.stringify(response.data.user));
     }
 
+    // Store refresh token if provided
+    if (response.data.refreshToken) {
+      await setItemAsync('refreshToken', response.data.refreshToken);
+    }
+
     return response.data;
   }
 
@@ -213,6 +277,11 @@ class ApiService {
       await setItemAsync('userData', JSON.stringify(response.data.user));
     }
 
+    // Store refresh token if provided
+    if (response.data.refreshToken) {
+      await setItemAsync('refreshToken', response.data.refreshToken);
+    }
+
     return response.data;
   }
 
@@ -222,6 +291,27 @@ class ApiService {
     if (response.data.token) {
       await setItemAsync('authToken', response.data.token);
       await setItemAsync('userData', JSON.stringify(response.data.user));
+    }
+
+    // Store refresh token if provided
+    if (response.data.refreshToken) {
+      await setItemAsync('refreshToken', response.data.refreshToken);
+    }
+
+    return response.data;
+  }
+
+  async refreshAuthToken(refreshToken: string): Promise<AuthResponse> {
+    const response = await this.client.post('/auth/refresh', { refreshToken });
+
+    if (response.data.token) {
+      await setItemAsync('authToken', response.data.token);
+      await setItemAsync('userData', JSON.stringify(response.data.user));
+    }
+
+    // Update refresh token if a new one is provided
+    if (response.data.refreshToken) {
+      await setItemAsync('refreshToken', response.data.refreshToken);
     }
 
     return response.data;
@@ -235,6 +325,7 @@ class ApiService {
     } finally {
       await deleteItemAsync('authToken');
       await deleteItemAsync('userData');
+      await deleteItemAsync('refreshToken');
     }
   }
 
@@ -332,7 +423,9 @@ class ApiService {
       const userJson = await getItemAsync('userData');
       return userJson ? JSON.parse(userJson) : null;
     } catch (error) {
-      // Failed to parse stored user data, return null
+      // If JSON parsing fails, clear corrupted data
+      if (__DEV__) console.error('Failed to parse stored user data:', error);
+      await deleteItemAsync('userData');
       return null;
     }
   }

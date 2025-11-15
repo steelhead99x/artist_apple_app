@@ -2,7 +2,7 @@ import { Router } from 'express';
 import crypto from 'crypto';
 import { query } from '../db.js';
 import { hashPassword, verifyPassword } from '../utils/passwordHash.js';
-import { generateToken, authenticateToken } from '../utils/auth.js';
+import { generateToken, generateRefreshToken, authenticateToken, verifyToken } from '../utils/auth.js';
 import { validateEmail, validatePassword, validateUserType } from '../utils/validation.js';
 import { sendEmail, emailTemplates, getAppUrl } from '../utils/email.js';
 import { authRateLimiter, pinVerificationRateLimiter } from '../middleware/rateLimiter.js';
@@ -903,6 +903,79 @@ router.put('/profile', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ error: 'Failed to update profile' });
+  }
+});
+
+// POST /api/auth/refresh
+// Refresh access token using refresh token
+router.post('/refresh', async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(401).json({ error: 'Refresh token required' });
+    }
+
+    // Verify refresh token
+    let payload;
+    try {
+      payload = verifyToken(refreshToken);
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid or expired refresh token' });
+    }
+
+    // Get fresh user data from database
+    const userResult = await query(
+      'SELECT id, email, name, user_type, status, deleted_at, is_admin_agent, agent_status FROM users WHERE id = $1',
+      [payload.userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    const user = userResult.rows[0];
+
+    // Check if user is deleted/suspended
+    if (user.deleted_at !== null || user.status === 'deleted') {
+      return res.status(403).json({ error: 'Account suspended or deleted' });
+    }
+
+    // Generate new access token
+    const newAccessToken = generateToken({
+      id: user.id,
+      userId: user.id,
+      email: user.email,
+      userType: user.user_type,
+      user_type: user.user_type,
+      is_admin_agent: user.user_type === 'booking_agent' ? (user.is_admin_agent || false) : undefined,
+      agent_status: user.user_type === 'booking_agent' ? (user.agent_status || 'pending') : undefined,
+    });
+
+    // Optionally generate new refresh token (token rotation for better security)
+    const newRefreshToken = generateRefreshToken({
+      id: user.id,
+      userId: user.id,
+      email: user.email,
+      userType: user.user_type,
+      user_type: user.user_type,
+      is_admin_agent: user.user_type === 'booking_agent' ? (user.is_admin_agent || false) : undefined,
+      agent_status: user.user_type === 'booking_agent' ? (user.agent_status || 'pending') : undefined,
+    });
+
+    res.json({
+      token: newAccessToken,
+      refreshToken: newRefreshToken,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        userType: user.user_type,
+      },
+    });
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    res.status(500).json({ error: 'Failed to refresh token' });
   }
 });
 

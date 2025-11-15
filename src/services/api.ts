@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import { Platform } from 'react-native';
 import { getItemAsync, setItemAsync, deleteItemAsync } from './storage';
 import {
   AuthResponse,
@@ -11,6 +12,7 @@ import {
 // Load from environment variables (configured in .env file)
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8787/api';
 const API_TIMEOUT = parseInt(process.env.EXPO_PUBLIC_API_TIMEOUT || '15000', 10);
+const IS_WEB = Platform.OS === 'web';
 
 // Validate API URL is configured
 if (!process.env.EXPO_PUBLIC_API_BASE_URL) {
@@ -33,12 +35,23 @@ class ApiService {
   private client: AxiosInstance;
 
   constructor() {
+    // Configure default headers for CORS on web
+    const defaultHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // Add CORS-friendly headers for web platform
+    if (IS_WEB) {
+      defaultHeaders['Accept'] = 'application/json';
+      defaultHeaders['X-Requested-With'] = 'XMLHttpRequest';
+    }
+
     this.client = axios.create({
       baseURL: API_BASE_URL,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: defaultHeaders,
       timeout: API_TIMEOUT,
+      // For web, don't send credentials by default unless needed
+      withCredentials: false,
     });
 
     // Add auth token to requests
@@ -57,6 +70,34 @@ class ApiService {
     this.client.interceptors.response.use(
       (response) => response,
       async (error: AxiosError) => {
+        // Handle CORS errors on web platform
+        if (IS_WEB && !error.response) {
+          const isCorsError = 
+            error.message?.includes('CORS') ||
+            error.message?.includes('Network Error') ||
+            error.code === 'ERR_NETWORK' ||
+            error.code === 'ECONNABORTED';
+
+          if (isCorsError) {
+            const corsMessage = 
+              'CORS error: The API server is not configured to allow requests from this origin. ' +
+              'Please ensure the backend has CORS headers configured, or contact the API administrator.';
+            
+            console.error('CORS Error:', {
+              url: error.config?.url,
+              baseURL: error.config?.baseURL,
+              message: error.message,
+              code: error.code,
+            });
+
+            throw new ApiError(
+              corsMessage,
+              undefined,
+              { corsError: true, originalError: error.message }
+            );
+          }
+        }
+
         if (error.response?.status === 401) {
           // Clear token on unauthorized
           await deleteItemAsync('authToken');

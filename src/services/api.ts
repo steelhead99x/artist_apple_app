@@ -19,6 +19,17 @@ if (!process.env.EXPO_PUBLIC_API_BASE_URL) {
   console.warn('⚠️ EXPO_PUBLIC_API_BASE_URL not configured. Using default localhost. Please create .env file from .env.example');
 }
 
+// Warn if on web and using remote API (likely CORS issue)
+if (IS_WEB && API_BASE_URL.startsWith('https://') && !API_BASE_URL.includes('localhost')) {
+  console.warn('⚠️ CORS WARNING: You are on web platform using a remote API URL.');
+  console.warn('   This will likely cause CORS errors unless the backend sends CORS headers.');
+  console.warn('   Solutions:');
+  console.warn('   1. Use the proxy server: npm run proxy (then set EXPO_PUBLIC_API_BASE_URL=http://localhost:3001/api)');
+  console.warn('   2. Use native platforms: npm run ios or npm run android');
+  console.warn('   3. Configure backend to send CORS headers');
+  console.warn(`   Current API URL: ${API_BASE_URL}`);
+}
+
 // Error handling helper
 export class ApiError extends Error {
   constructor(

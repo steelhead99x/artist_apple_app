@@ -93,6 +93,11 @@ export function Input({
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           secureTextEntry={secureTextEntry && !isPasswordVisible}
+          {...(Platform.OS === 'web' && secureTextEntry && {
+            // Web-specific attributes for password fields
+            autoComplete: 'current-password',
+            type: 'password',
+          })}
           {...textInputProps}
         />
 

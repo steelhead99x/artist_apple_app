@@ -144,10 +144,21 @@ class MessageService {
    * Upload public key to server for other users to retrieve
    */
   async uploadPublicKey(): Promise<void> {
-    const keyPair = await encryptionService.initializeKeys();
-    await apiService.post('/messages/upload-public-key', {
-      public_key: keyPair.publicKey,
-    });
+    try {
+      const keyPair = await encryptionService.initializeKeys();
+      await apiService.post('/messages/upload-public-key', {
+        public_key: keyPair.publicKey,
+      });
+    } catch (error: any) {
+      // Handle 404 or other errors gracefully - E2EE might not be available on all backends
+      const status = error?.status || error?.response?.status;
+      if (status === 404) {
+        if (__DEV__) console.warn('⚠️ E2EE endpoint not available (404). E2EE features will be limited.');
+        return; // Don't throw - allow login to continue
+      }
+      // Re-throw other errors
+      throw error;
+    }
   }
 
   /**

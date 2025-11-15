@@ -1,11 +1,16 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
-import * as SecureStore from 'expo-secure-store';
-import * as LocalAuthentication from 'expo-local-authentication';
-import { Alert } from 'react-native';
+import { Platform, Alert } from 'react-native';
+import { getItemAsync, setItemAsync, deleteItemAsync } from './storage';
 import apiService, { ApiError } from './api';
 import messageService from './messages';
 import encryptionService from './encryption';
 import { User, LoginCredentials, RegisterData } from '../types';
+
+// Conditionally import LocalAuthentication only on native platforms
+let LocalAuthentication: any = null;
+if (Platform.OS !== 'web') {
+  LocalAuthentication = require('expo-local-authentication');
+}
 
 interface AuthContextType {
   user: User | null;
@@ -46,25 +51,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const initializeAuth = async () => {
     try {
-      // Check biometric availability
-      const compatible = await LocalAuthentication.hasHardwareAsync();
-      const enrolled = await LocalAuthentication.isEnrolledAsync();
-      setBiometricAvailable(compatible && enrolled);
+      // Check biometric availability (only on native platforms)
+      if (LocalAuthentication) {
+        try {
+          const compatible = await LocalAuthentication.hasHardwareAsync();
+          const enrolled = await LocalAuthentication.isEnrolledAsync();
+          setBiometricAvailable(compatible && enrolled);
+        } catch (error) {
+          console.warn('Biometric check failed:', error);
+          setBiometricAvailable(false);
+        }
+      } else {
+        setBiometricAvailable(false);
+      }
 
       // Check if biometric is enabled
-      const bioEnabled = await SecureStore.getItemAsync(BIOMETRIC_KEY);
+      const bioEnabled = await getItemAsync(BIOMETRIC_KEY);
       setBiometricEnabled(bioEnabled === 'true');
 
       // Try to restore session
-      const token = await SecureStore.getItemAsync('authToken');
+      const token = await getItemAsync('authToken');
       if (token) {
         try {
           const userData = await apiService.getCurrentUser();
           setUser(userData);
         } catch (error) {
           // Token expired or invalid, clear it
-          await SecureStore.deleteItemAsync('authToken');
-          await SecureStore.deleteItemAsync('userData');
+          await deleteItemAsync('authToken');
+          await deleteItemAsync('userData');
         }
       }
     } catch (error) {
@@ -95,10 +109,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Save credentials if remember me is checked (for biometric login)
-      // SECURITY NOTE: This stores credentials encrypted in SecureStore
+      // SECURITY NOTE: This stores credentials encrypted in SecureStore (native) or localStorage (web)
       // Consider using refresh tokens instead for better security
       if (rememberMe) {
-        await SecureStore.setItemAsync(
+        await setItemAsync(
           CREDENTIALS_KEY,
           JSON.stringify(credentials)
         );
@@ -127,8 +141,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Optionally clear biometric settings
       // Note: We don't clear biometric settings so user can re-login with biometric
-      // await SecureStore.deleteItemAsync(BIOMETRIC_KEY);
-      // await SecureStore.deleteItemAsync(CREDENTIALS_KEY);
+      // await deleteItemAsync(BIOMETRIC_KEY);
+      // await deleteItemAsync(CREDENTIALS_KEY);
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -195,7 +209,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const enableBiometric = async () => {
     try {
-      if (!biometricAvailable) {
+      if (!LocalAuthentication || !biometricAvailable) {
         Alert.alert(
           'Biometric Not Available',
           'Biometric authentication is not available on this device.'
@@ -211,7 +225,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (result.success) {
-        await SecureStore.setItemAsync(BIOMETRIC_KEY, 'true');
+        await setItemAsync(BIOMETRIC_KEY, 'true');
         setBiometricEnabled(true);
         Alert.alert('Success', 'Biometric authentication enabled!');
       }
@@ -226,8 +240,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const disableBiometric = async () => {
     try {
-      await SecureStore.deleteItemAsync(BIOMETRIC_KEY);
-      await SecureStore.deleteItemAsync(CREDENTIALS_KEY);
+      await deleteItemAsync(BIOMETRIC_KEY);
+      await deleteItemAsync(CREDENTIALS_KEY);
       setBiometricEnabled(false);
       Alert.alert('Success', 'Biometric authentication disabled.');
     } catch (error) {
@@ -240,7 +254,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const authenticateWithBiometric = async (): Promise<boolean> => {
     try {
-      if (!biometricEnabled || !biometricAvailable) {
+      if (!LocalAuthentication || !biometricEnabled || !biometricAvailable) {
         return false;
       }
 
@@ -252,7 +266,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (result.success) {
         // Get saved credentials
-        const credentialsJson = await SecureStore.getItemAsync(CREDENTIALS_KEY);
+        const credentialsJson = await getItemAsync(CREDENTIALS_KEY);
         if (credentialsJson) {
           const credentials: LoginCredentials = JSON.parse(credentialsJson);
           await login(credentials);

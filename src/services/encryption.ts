@@ -5,7 +5,7 @@ import {
   encodeBase64,
   decodeBase64
 } from 'tweetnacl-util';
-import * as SecureStore from 'expo-secure-store';
+import { getItemAsync, setItemAsync, deleteItemAsync } from './storage';
 
 /**
  * End-to-End Encryption Service
@@ -49,15 +49,15 @@ class EncryptionService {
    */
   async storeKeyPair(keyPair: KeyPair): Promise<void> {
     try {
-      await SecureStore.setItemAsync(
+      await setItemAsync(
         EncryptionService.STORAGE_KEYS.PUBLIC_KEY,
         keyPair.publicKey
       );
-      await SecureStore.setItemAsync(
+      await setItemAsync(
         EncryptionService.STORAGE_KEYS.SECRET_KEY,
         keyPair.secretKey
       );
-      await SecureStore.setItemAsync(
+      await setItemAsync(
         EncryptionService.STORAGE_KEYS.KEY_TIMESTAMP,
         Date.now().toString()
       );
@@ -72,10 +72,10 @@ class EncryptionService {
    */
   async getStoredKeyPair(): Promise<KeyPair | null> {
     try {
-      const publicKey = await SecureStore.getItemAsync(
+      const publicKey = await getItemAsync(
         EncryptionService.STORAGE_KEYS.PUBLIC_KEY
       );
-      const secretKey = await SecureStore.getItemAsync(
+      const secretKey = await getItemAsync(
         EncryptionService.STORAGE_KEYS.SECRET_KEY
       );
 
@@ -223,9 +223,9 @@ class EncryptionService {
    */
   async clearKeys(): Promise<void> {
     try {
-      await SecureStore.deleteItemAsync(EncryptionService.STORAGE_KEYS.PUBLIC_KEY);
-      await SecureStore.deleteItemAsync(EncryptionService.STORAGE_KEYS.SECRET_KEY);
-      await SecureStore.deleteItemAsync(EncryptionService.STORAGE_KEYS.KEY_TIMESTAMP);
+      await deleteItemAsync(EncryptionService.STORAGE_KEYS.PUBLIC_KEY);
+      await deleteItemAsync(EncryptionService.STORAGE_KEYS.SECRET_KEY);
+      await deleteItemAsync(EncryptionService.STORAGE_KEYS.KEY_TIMESTAMP);
     } catch (error) {
       console.error('Failed to clear keys:', error);
     }
@@ -236,7 +236,7 @@ class EncryptionService {
    */
   async getKeyAge(): Promise<number | null> {
     try {
-      const timestamp = await SecureStore.getItemAsync(
+      const timestamp = await getItemAsync(
         EncryptionService.STORAGE_KEYS.KEY_TIMESTAMP
       );
       if (!timestamp) return null;

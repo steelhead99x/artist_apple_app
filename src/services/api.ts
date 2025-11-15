@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import { getItemAsync, setItemAsync, deleteItemAsync } from './storage';
 import {
   AuthResponse,
   LoginCredentials,
@@ -44,7 +44,7 @@ class ApiService {
     // Add auth token to requests
     this.client.interceptors.request.use(
       async (config) => {
-        const token = await SecureStore.getItemAsync('authToken');
+        const token = await getItemAsync('authToken');
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -59,7 +59,7 @@ class ApiService {
       async (error: AxiosError) => {
         if (error.response?.status === 401) {
           // Clear token on unauthorized
-          await SecureStore.deleteItemAsync('authToken');
+          await deleteItemAsync('authToken');
           // You might want to trigger logout in your app here
         }
 
@@ -86,9 +86,9 @@ class ApiService {
     const response = await this.client.post('/auth/login', credentials);
 
     if (response.data.token) {
-      await SecureStore.setItemAsync('authToken', response.data.token);
+      await setItemAsync('authToken', response.data.token);
       // Store user data for offline access
-      await SecureStore.setItemAsync('userData', JSON.stringify(response.data.user));
+      await setItemAsync('userData', JSON.stringify(response.data.user));
     }
 
     return response.data;
@@ -106,9 +106,9 @@ class ApiService {
     });
 
     if (response.data.token) {
-      await SecureStore.setItemAsync('authToken', response.data.token);
+      await setItemAsync('authToken', response.data.token);
       // Store user data for offline access
-      await SecureStore.setItemAsync('userData', JSON.stringify(response.data.user));
+      await setItemAsync('userData', JSON.stringify(response.data.user));
     }
 
     return response.data;
@@ -131,8 +131,8 @@ class ApiService {
     } catch (error) {
       // Logout anyway even if API call fails
     } finally {
-      await SecureStore.deleteItemAsync('authToken');
-      await SecureStore.deleteItemAsync('userData');
+      await deleteItemAsync('authToken');
+      await deleteItemAsync('userData');
     }
   }
 
@@ -222,11 +222,11 @@ class ApiService {
   // ============================================================================
 
   async getStoredToken(): Promise<string | null> {
-    return await SecureStore.getItemAsync('authToken');
+    return await getItemAsync('authToken');
   }
 
   async getStoredUser(): Promise<any | null> {
-    const userJson = await SecureStore.getItemAsync('userData');
+    const userJson = await getItemAsync('userData');
     return userJson ? JSON.parse(userJson) : null;
   }
 }

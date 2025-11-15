@@ -3,6 +3,24 @@
  * Modern, musician-friendly theme optimized for artists and bands
  */
 
+import { Platform } from 'react-native';
+
+// Helper to convert shadow properties to boxShadow for web
+const createShadow = (offset: { width: number; height: number }, radius: number, opacity: number, color: string = '#000') => {
+  if (Platform.OS === 'web') {
+    return {
+      boxShadow: `${offset.width}px ${offset.height}px ${radius}px rgba(0, 0, 0, ${opacity})`,
+    };
+  }
+  return {
+    shadowColor: color,
+    shadowOffset: offset,
+    shadowOpacity: opacity,
+    shadowRadius: radius,
+    elevation: Math.max(offset.height, radius),
+  };
+};
+
 export const theme = {
   // Color Palette - Inspired by music and creativity
   colors: {
@@ -154,48 +172,20 @@ export const theme = {
 
   // Shadows - Soft, elegant elevation
   shadows: {
-    none: {
-      shadowColor: 'transparent',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0,
-      shadowRadius: 0,
-      elevation: 0,
-    },
-    sm: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 2,
-      elevation: 1,
-    },
-    base: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2,
-    },
-    md: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.12,
-      shadowRadius: 8,
-      elevation: 4,
-    },
-    lg: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.15,
-      shadowRadius: 16,
-      elevation: 8,
-    },
-    xl: {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 12 },
-      shadowOpacity: 0.18,
-      shadowRadius: 24,
-      elevation: 12,
-    },
+    none: Platform.OS === 'web' 
+      ? { boxShadow: 'none' }
+      : {
+          shadowColor: 'transparent',
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0,
+          shadowRadius: 0,
+          elevation: 0,
+        },
+    sm: createShadow({ width: 0, height: 1 }, 2, 0.05),
+    base: createShadow({ width: 0, height: 2 }, 4, 0.1),
+    md: createShadow({ width: 0, height: 4 }, 8, 0.12),
+    lg: createShadow({ width: 0, height: 8 }, 16, 0.15),
+    xl: createShadow({ width: 0, height: 12 }, 24, 0.18),
   },
 
   // Animation Timings

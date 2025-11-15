@@ -104,7 +104,9 @@ export default function LoginScreen({ navigation }: any) {
     try {
       await login({ email: email.trim().toLowerCase(), password }, rememberMe);
       // Navigation is handled by the auth state change
-    } catch (err) {
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Invalid email or password. Please try again.';
+      Alert.alert('Login Failed', errorMessage);
       console.error('Login error:', err);
     }
   };

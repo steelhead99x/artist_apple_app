@@ -51,13 +51,30 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
   }, []);
 
   const requestPermissions = async () => {
-    const { status } = await Camera.requestCameraPermissionsAsync();
-    setHasPermission(status === 'granted');
+    try {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      setHasPermission(status === 'granted');
+      if (status !== 'granted') {
+        Alert.alert(
+          'Camera Permission Required',
+          'Please enable camera access in your device settings to use live streaming.'
+        );
+      }
+    } catch (error) {
+      console.error('Camera permission error:', error);
+      setHasPermission(false);
+      Alert.alert('Error', 'Failed to request camera permissions');
+    }
   };
 
   const createMuxStream = async () => {
     if (!title.trim()) {
       Alert.alert('Error', 'Please enter a title for your stream');
+      return;
+    }
+
+    if (title.trim().length < 3) {
+      Alert.alert('Error', 'Stream title must be at least 3 characters');
       return;
     }
 
@@ -68,6 +85,10 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
         description: description.trim() || undefined,
       });
 
+      if (!response || !response.playback_url) {
+        throw new Error('Invalid response from server');
+      }
+
       setStream(response);
       setShowForm(false);
       Alert.alert(
@@ -77,15 +98,17 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
       );
     } catch (error: any) {
       console.error('Failed to create stream:', error);
-      if (error.message?.includes('subscription')) {
-        Alert.alert(
-          'Subscription Required',
-          'Live streaming requires a streaming subscription. Please upgrade to Artist Streaming Pro tier.',
-          [{ text: 'OK' }]
-        );
-      } else {
-        Alert.alert('Error', 'Failed to create live stream. Please try again.');
+      let errorMessage = 'Failed to create live stream. Please try again.';
+
+      if (error.message?.includes('subscription') || error.upgrade_required) {
+        errorMessage = 'Live streaming requires a streaming subscription. Please upgrade to Artist Streaming Pro tier.';
+      } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.message) {
+        errorMessage = error.message;
       }
+
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }
@@ -98,16 +121,25 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
     }
 
     try {
+      // Check camera permission before starting
+      const { status } = await Camera.getCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Error', 'Camera permission is required to start streaming');
+        return;
+      }
+
       setIsStreaming(true);
       // In a real implementation, you would start the camera and begin streaming to Mux
       // This would typically involve using expo-av or a native streaming library
+      // For now, we just mark the stream as started
 
       await apiService.put(`/mux/live-streams/${stream.id}/start`, {});
 
-      Alert.alert('Streaming', 'Your live stream is now active!');
+      Alert.alert('Streaming', 'Your live stream is now active! Share the playback URL with your audience.');
     } catch (error) {
       console.error('Failed to start stream:', error);
-      Alert.alert('Error', 'Failed to start streaming. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start streaming';
+      Alert.alert('Error', errorMessage);
       setIsStreaming(false);
     }
   };
@@ -148,6 +180,8 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
   const sharePlaybackUrl = () => {
     if (stream?.playback_url) {
       copyToClipboard(stream.playback_url, 'Playback URL');
+    } else {
+      Alert.alert('Error', 'Playback URL not available yet');
     }
   };
 

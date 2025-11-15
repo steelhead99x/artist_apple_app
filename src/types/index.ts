@@ -175,12 +175,14 @@ export interface TourDate {
   payment_amount?: number;
   payment_currency?: string;
   payment_amount_eth?: number;
+  payment_status?: 'pending' | 'paid' | 'partial' | 'overdue';
   exchange_rate?: number;
   notes?: string;
   created_at: string;
   // Joined fields from queries
   band_name?: string;
   venue_name?: string;
+  venue_contact_email?: string;
   city?: string;
   state?: string;
   address?: string;

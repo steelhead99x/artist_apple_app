@@ -59,8 +59,19 @@ export default function CreateBand({ navigation }: CreateBandProps) {
       return;
     }
 
+    if (bandName.trim().length < 2) {
+      Alert.alert('Error', 'Band name must be at least 2 characters');
+      return;
+    }
+
     if (!genre) {
       Alert.alert('Error', 'Please select a genre');
+      return;
+    }
+
+    // Validate state code if provided
+    if (state.trim() && state.trim().length !== 2) {
+      Alert.alert('Error', 'Please enter a valid 2-letter state code (e.g., NY, CA)');
       return;
     }
 
@@ -71,16 +82,17 @@ export default function CreateBand({ navigation }: CreateBandProps) {
         genre,
         description: description.trim() || undefined,
         city: city.trim() || undefined,
-        state: state.trim() || undefined,
+        state: state.trim().toUpperCase() || undefined,
       };
 
-      await bandService.createBand(bandData);
-      Alert.alert('Success', 'Band created successfully!', [
+      const newBand = await bandService.createBand(bandData);
+      Alert.alert('Success', `${bandName} has been created successfully!`, [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
-      Alert.alert('Error', 'Failed to create band. Please try again.');
-      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create band';
+      Alert.alert('Error', errorMessage);
+      console.error('Create band error:', error);
     } finally {
       setLoading(false);
     }

@@ -60,20 +60,34 @@ export default function TourDetails({ navigation, route }: TourDetailsProps) {
 
   const handleContact = () => {
     if (tour?.venue_contact_email) {
-      Linking.openURL(`mailto:${tour.venue_contact_email}`);
+      Linking.openURL(`mailto:${tour.venue_contact_email}`).catch((err) => {
+        console.error('Failed to open email:', err);
+        Alert.alert('Error', 'Unable to open email client');
+      });
     } else {
-      Alert.alert('No Contact', 'No contact information available for this venue');
+      Alert.alert(
+        'No Contact Info',
+        'Contact information is not available for this venue. Please reach out through your booking agent or check the venue details.',
+        [{ text: 'OK' }]
+      );
     }
   };
 
   const handleGetDirections = () => {
-    if (tour?.address) {
-      const address = `${tour.address}, ${tour.city}, ${tour.state}`;
-      const url = Platform.OS === 'ios'
-        ? `maps://app?daddr=${encodeURIComponent(address)}`
-        : `geo:0,0?q=${encodeURIComponent(address)}`;
-      Linking.openURL(url);
-    }
+    if (!tour) return;
+
+    const address = tour.address
+      ? `${tour.address}, ${tour.city}, ${tour.state}`
+      : `${tour.city}, ${tour.state}`;
+
+    const url = Platform.OS === 'ios'
+      ? `maps://app?daddr=${encodeURIComponent(address)}`
+      : `geo:0,0?q=${encodeURIComponent(address)}`;
+
+    Linking.openURL(url).catch((err) => {
+      console.error('Failed to open maps:', err);
+      Alert.alert('Error', 'Unable to open maps application');
+    });
   };
 
   const handleCancelTour = () => {
@@ -252,10 +266,20 @@ export default function TourDetails({ navigation, route }: TourDetailsProps) {
 
       {/* Action Buttons */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
-          <Ionicons name="mail" size={20} color="white" />
-          <Text style={styles.contactButtonText}>Contact Venue</Text>
-        </TouchableOpacity>
+        {tour.venue_contact_email ? (
+          <TouchableOpacity style={styles.contactButton} onPress={handleContact}>
+            <Ionicons name="mail" size={20} color="white" />
+            <Text style={styles.contactButtonText}>Contact Venue</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={[styles.contactButton, styles.contactButtonDisabled]}
+            onPress={handleContact}
+          >
+            <Ionicons name="mail-outline" size={20} color="white" />
+            <Text style={styles.contactButtonText}>No Contact Info</Text>
+          </TouchableOpacity>
+        )}
         {canCancel && (
           <TouchableOpacity style={styles.cancelButton} onPress={handleCancelTour}>
             <Ionicons name="close-circle" size={20} color={theme.colors.error} />
@@ -462,6 +486,10 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.lg,
     gap: theme.spacing.sm,
+  },
+  contactButtonDisabled: {
+    backgroundColor: theme.colors.gray[400],
+    opacity: 0.7,
   },
   contactButtonText: {
     fontSize: theme.typography.sizes.base,

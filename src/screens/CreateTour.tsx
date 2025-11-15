@@ -34,8 +34,16 @@ export default function CreateTour({ navigation }: CreateTourProps) {
   const [selectedBandId, setSelectedBandId] = useState('');
   const [selectedVenueId, setSelectedVenueId] = useState('');
   const [date, setDate] = useState(new Date());
-  const [startTime, setStartTime] = useState(new Date());
-  const [endTime, setEndTime] = useState(new Date());
+  const [startTime, setStartTime] = useState(() => {
+    const time = new Date();
+    time.setHours(20, 0, 0, 0); // Default to 8:00 PM
+    return time;
+  });
+  const [endTime, setEndTime] = useState(() => {
+    const time = new Date();
+    time.setHours(23, 0, 0, 0); // Default to 11:00 PM
+    return time;
+  });
   const [paymentAmount, setPaymentAmount] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -62,9 +70,31 @@ export default function CreateTour({ navigation }: CreateTourProps) {
       // Set default selections
       if (bandsData.length > 0) setSelectedBandId(bandsData[0].id);
       if (venuesData.length > 0) setSelectedVenueId(venuesData[0].id);
+
+      // Warn if no bands or venues
+      if (bandsData.length === 0) {
+        Alert.alert(
+          'No Bands',
+          'You need to create a band before creating a gig. Would you like to create one now?',
+          [
+            { text: 'Later', onPress: () => navigation.goBack(), style: 'cancel' },
+            { text: 'Create Band', onPress: () => navigation.navigate('CreateBand') },
+          ]
+        );
+      } else if (venuesData.length === 0) {
+        Alert.alert(
+          'No Venues',
+          'No venues are available. Please check back later or contact support.',
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      }
     } catch (error) {
-      Alert.alert('Error', 'Failed to load bands and venues');
-      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load bands and venues';
+      Alert.alert('Error', errorMessage, [
+        { text: 'Retry', onPress: () => loadData() },
+        { text: 'Cancel', onPress: () => navigation.goBack(), style: 'cancel' },
+      ]);
+      console.error('Load data error:', error);
     } finally {
       setLoadingData(false);
     }
@@ -76,17 +106,40 @@ export default function CreateTour({ navigation }: CreateTourProps) {
       return;
     }
 
+    // Validate date is not in the past (allow today)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDate = new Date(date);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    if (selectedDate < today) {
+      Alert.alert('Error', 'Please select a current or future date for the gig');
+      return;
+    }
+
+    // Validate end time is after start time
+    if (endTime <= startTime) {
+      Alert.alert('Error', 'End time must be after start time');
+      return;
+    }
+
+    // Validate payment amount if provided
+    if (paymentAmount && (isNaN(parseFloat(paymentAmount)) || parseFloat(paymentAmount) < 0)) {
+      Alert.alert('Error', 'Please enter a valid payment amount');
+      return;
+    }
+
     setLoading(true);
     try {
       const tourData = {
         band_id: selectedBandId,
         venue_id: selectedVenueId,
         date: date.toISOString().split('T')[0],
-        start_time: startTime.toLocaleTimeString('en-US', { hour12: false }),
-        end_time: endTime.toLocaleTimeString('en-US', { hour12: false }),
+        start_time: startTime.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
+        end_time: endTime.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' }),
         payment_amount: paymentAmount ? parseFloat(paymentAmount) : undefined,
         payment_currency: 'USD',
-        notes: notes || undefined,
+        notes: notes.trim() || undefined,
       };
 
       await tourService.createTour(tourData);
@@ -94,8 +147,9 @@ export default function CreateTour({ navigation }: CreateTourProps) {
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
-      Alert.alert('Error', 'Failed to create gig. Please try again.');
-      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create gig';
+      Alert.alert('Error', errorMessage);
+      console.error('Create tour error:', error);
     } finally {
       setLoading(false);
     }

@@ -10,7 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../services/AuthContext';
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }: any) {
   const { user, logout } = useAuth();
 
   const handleLogout = async () => {
@@ -58,7 +58,7 @@ export default function ProfileScreen() {
       icon: 'help-circle-outline',
       title: 'Help & Support',
       subtitle: 'Get help or contact us',
-      action: () => console.log('Help'),
+      action: () => navigation.navigate('Help'),
     },
   ];
 

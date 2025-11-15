@@ -8,11 +8,10 @@ import {
   TextInput,
   ScrollView,
   ActivityIndicator,
-  Clipboard,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Camera } from 'expo-camera';
+import { Camera, CameraType } from 'expo-camera';
 import apiService from '../services/api';
 import theme from '../theme';
 
@@ -43,25 +42,97 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
   const [description, setDescription] = useState('');
   const [showForm, setShowForm] = useState(true);
 
+  // Camera settings
+  const [cameraType, setCameraType] = useState<CameraType>(CameraType.front);
+  const [showCameraSettings, setShowCameraSettings] = useState(false);
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
+  const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
+
   const cameraRef = useRef<Camera>(null);
+  const videoRef = useRef<any>(null); // HTMLVideoElement for web, but React Native doesn't have this type
+  const mediaStreamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     requestPermissions();
+    
+    // Cleanup media stream on unmount
+    return () => {
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+        mediaStreamRef.current = null;
+      }
+      // Clean up video element
+      if (videoRef.current && Platform.OS === 'web') {
+        videoRef.current.srcObject = null;
+      }
+    };
   }, []);
+
+  // Set up video stream when ref becomes available (web only)
+  useEffect(() => {
+    if (Platform.OS === 'web' && videoRef.current && mediaStreamRef.current) {
+      videoRef.current.srcObject = mediaStreamRef.current;
+      videoRef.current.play().catch(console.error);
+    }
+  }, [hasPermission, hasMicPermission, selectedCameraId]);
+
+  // Get available cameras (web only)
+  useEffect(() => {
+    if (Platform.OS === 'web' && hasPermission) {
+      navigator.mediaDevices.enumerateDevices().then(devices => {
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        setAvailableCameras(videoDevices);
+        if (videoDevices.length > 0 && !selectedCameraId) {
+          // Try to find front-facing camera first, otherwise use first available
+          const frontCamera = videoDevices.find(cam => 
+            cam.label.toLowerCase().includes('front') || 
+            cam.label.toLowerCase().includes('user')
+          );
+          setSelectedCameraId(frontCamera?.deviceId || videoDevices[0].deviceId);
+        }
+      }).catch(console.error);
+    }
+  }, [hasPermission]);
 
   const requestPermissions = async () => {
     try {
-      const cameraResult = await Camera.requestCameraPermissionsAsync();
-      const micResult = await Camera.requestMicrophonePermissionsAsync();
+      // On web, permissions are handled differently
+      if (Platform.OS === 'web') {
+        // Request media permissions for web
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: selectedCameraId 
+              ? { deviceId: { exact: selectedCameraId } }
+              : { facingMode: 'user' }, 
+            audio: true 
+          });
+          // Store stream for preview
+          mediaStreamRef.current = stream;
+          
+          setHasPermission(true);
+          setHasMicPermission(true);
+        } catch (error) {
+          console.error('Web permission error:', error);
+          setHasPermission(false);
+          setHasMicPermission(false);
+          Alert.alert(
+            'Permissions Required',
+            'Please enable camera and microphone access in your browser to use live streaming.'
+          );
+        }
+      } else {
+        const cameraResult = await Camera.requestCameraPermissionsAsync();
+        const micResult = await Camera.requestMicrophonePermissionsAsync();
 
-      setHasPermission(cameraResult.status === 'granted');
-      setHasMicPermission(micResult.status === 'granted');
+        setHasPermission(cameraResult.status === 'granted');
+        setHasMicPermission(micResult.status === 'granted');
 
-      if (cameraResult.status !== 'granted' || micResult.status !== 'granted') {
-        Alert.alert(
-          'Permissions Required',
-          'Please enable camera and microphone access in your device settings to use live streaming.'
-        );
+        if (cameraResult.status !== 'granted' || micResult.status !== 'granted') {
+          Alert.alert(
+            'Permissions Required',
+            'Please enable camera and microphone access in your device settings to use live streaming.'
+          );
+        }
       }
     } catch (error) {
       console.error('Permission error:', error);
@@ -172,9 +243,20 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
     );
   };
 
-  const copyToClipboard = (text: string, label: string) => {
-    Clipboard.setString(text);
-    Alert.alert('Copied!', `${label} copied to clipboard`);
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      if (Platform.OS === 'web') {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Use React Native Clipboard for native platforms
+        const { Clipboard } = require('react-native');
+        Clipboard.setString(text);
+      }
+      Alert.alert('Copied!', `${label} copied to clipboard`);
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      Alert.alert('Error', 'Failed to copy to clipboard');
+    }
   };
 
   const sharePlaybackUrl = () => {
@@ -182,6 +264,71 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
       copyToClipboard(stream.playback_url, 'Playback URL');
     } else {
       Alert.alert('Error', 'Playback URL not available yet');
+    }
+  };
+
+  const switchCamera = async () => {
+    if (Platform.OS === 'web') {
+      // Switch camera on web
+      if (mediaStreamRef.current) {
+        // Stop current stream
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+
+      try {
+        // Find next camera
+        const currentIndex = availableCameras.findIndex(cam => cam.deviceId === selectedCameraId);
+        const nextIndex = (currentIndex + 1) % availableCameras.length;
+        const nextCamera = availableCameras[nextIndex];
+        
+        if (nextCamera) {
+          setSelectedCameraId(nextCamera.deviceId);
+          
+          // Get new stream with selected camera
+          const newStream = await navigator.mediaDevices.getUserMedia({
+            video: { deviceId: { exact: nextCamera.deviceId } },
+            audio: true
+          });
+          
+          mediaStreamRef.current = newStream;
+          
+          if (videoRef.current) {
+            videoRef.current.srcObject = newStream;
+            videoRef.current.play().catch(console.error);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to switch camera:', error);
+        Alert.alert('Error', 'Failed to switch camera');
+      }
+    } else {
+      // Switch camera on native
+      const newType = cameraType === CameraType.front ? CameraType.back : CameraType.front;
+      setCameraType(newType);
+    }
+  };
+
+  const updateWebCamera = async (cameraId: string) => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+    }
+
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { deviceId: { exact: cameraId } },
+        audio: true
+      });
+      
+      mediaStreamRef.current = newStream;
+      setSelectedCameraId(cameraId);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = newStream;
+        videoRef.current.play().catch(console.error);
+      }
+    } catch (error) {
+      console.error('Failed to update camera:', error);
+      Alert.alert('Error', 'Failed to switch camera');
     }
   };
 
@@ -245,18 +392,109 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
           {/* Camera Preview */}
           {hasPermission && hasMicPermission && (
             <View style={styles.cameraContainer}>
-              <Camera
-                ref={cameraRef}
-                style={styles.camera}
-                type={Camera.Constants.Type.front}
-              >
-                <View style={styles.cameraOverlay}>
-                  <View style={styles.previewBadge}>
-                    <View style={styles.previewDot} />
-                    <Text style={styles.previewText}>PREVIEW</Text>
+              {Platform.OS === 'web' ? (
+                <View style={styles.camera}>
+                  {/* @ts-ignore - video element for web */}
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                    }}
+                  />
+                  <View style={styles.cameraOverlay}>
+                    <View style={styles.previewBadge}>
+                      <View style={styles.previewDot} />
+                      <Text style={styles.previewText}>PREVIEW</Text>
+                    </View>
+                    {/* Camera Controls */}
+                    <View style={styles.cameraControls}>
+                      <TouchableOpacity
+                        style={styles.cameraControlButton}
+                        onPress={switchCamera}
+                      >
+                        <Ionicons name="camera-reverse" size={24} color="white" />
+                      </TouchableOpacity>
+                      {availableCameras.length > 1 && (
+                        <TouchableOpacity
+                          style={styles.cameraControlButton}
+                          onPress={() => setShowCameraSettings(!showCameraSettings)}
+                        >
+                          <Ionicons name="settings" size={24} color="white" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   </View>
                 </View>
-              </Camera>
+              ) : (
+                <Camera
+                  ref={cameraRef}
+                  style={styles.camera}
+                  type={cameraType}
+                >
+                  <View style={styles.cameraOverlay}>
+                    <View style={styles.previewBadge}>
+                      <View style={styles.previewDot} />
+                      <Text style={styles.previewText}>PREVIEW</Text>
+                    </View>
+                    {/* Camera Controls */}
+                    <View style={styles.cameraControls}>
+                      <TouchableOpacity
+                        style={styles.cameraControlButton}
+                        onPress={switchCamera}
+                      >
+                        <Ionicons name="camera-reverse" size={24} color="white" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </Camera>
+              )}
+            </View>
+          )}
+
+          {/* Camera Settings Panel (Web only) */}
+          {Platform.OS === 'web' && showCameraSettings && availableCameras.length > 1 && (
+            <View style={styles.settingsPanel}>
+              <View style={styles.settingsHeader}>
+                <Text style={styles.settingsTitle}>Select Camera</Text>
+                <TouchableOpacity onPress={() => setShowCameraSettings(false)}>
+                  <Ionicons name="close" size={24} color={theme.colors.text.primary} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={styles.settingsList}>
+                {availableCameras.map((camera) => (
+                  <TouchableOpacity
+                    key={camera.deviceId}
+                    style={[
+                      styles.cameraOption,
+                      selectedCameraId === camera.deviceId && styles.cameraOptionSelected
+                    ]}
+                    onPress={() => {
+                      updateWebCamera(camera.deviceId);
+                      setShowCameraSettings(false);
+                    }}
+                  >
+                    <Ionicons
+                      name={selectedCameraId === camera.deviceId ? "radio-button-on" : "radio-button-off"}
+                      size={20}
+                      color={selectedCameraId === camera.deviceId ? theme.colors.primary[600] : theme.colors.text.secondary}
+                    />
+                    <Text style={[
+                      styles.cameraOptionText,
+                      selectedCameraId === camera.deviceId && styles.cameraOptionTextSelected
+                    ]}>
+                      {camera.label || `Camera ${availableCameras.indexOf(camera) + 1}`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
           )}
 
@@ -324,21 +562,114 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Camera Preview */}
           <View style={styles.cameraContainer}>
-            <Camera
-              ref={cameraRef}
-              style={styles.camera}
-              type={Camera.Constants.Type.front}
-            >
-              <View style={styles.cameraOverlay}>
-                {isStreaming && (
-                  <View style={styles.liveIndicator}>
-                    <View style={styles.liveDot} />
-                    <Text style={styles.liveText}>LIVE</Text>
+            {Platform.OS === 'web' ? (
+              <View style={styles.camera}>
+                {/* @ts-ignore - video element for web */}
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                  }}
+                />
+                <View style={styles.cameraOverlay}>
+                  {isStreaming && (
+                    <View style={styles.liveIndicator}>
+                      <View style={styles.liveDot} />
+                      <Text style={styles.liveText}>LIVE</Text>
+                    </View>
+                  )}
+                  {/* Camera Controls */}
+                  <View style={styles.cameraControls}>
+                    <TouchableOpacity
+                      style={styles.cameraControlButton}
+                      onPress={switchCamera}
+                    >
+                      <Ionicons name="camera-reverse" size={24} color="white" />
+                    </TouchableOpacity>
+                    {availableCameras.length > 1 && (
+                      <TouchableOpacity
+                        style={styles.cameraControlButton}
+                        onPress={() => setShowCameraSettings(!showCameraSettings)}
+                      >
+                        <Ionicons name="settings" size={24} color="white" />
+                      </TouchableOpacity>
+                    )}
                   </View>
-                )}
+                </View>
               </View>
-            </Camera>
+            ) : (
+              <Camera
+                ref={cameraRef}
+                style={styles.camera}
+                type={cameraType}
+              >
+                <View style={styles.cameraOverlay}>
+                  {isStreaming && (
+                    <View style={styles.liveIndicator}>
+                      <View style={styles.liveDot} />
+                      <Text style={styles.liveText}>LIVE</Text>
+                    </View>
+                  )}
+                  {/* Camera Controls */}
+                  <View style={styles.cameraControls}>
+                    <TouchableOpacity
+                      style={styles.cameraControlButton}
+                      onPress={switchCamera}
+                    >
+                      <Ionicons name="camera-reverse" size={24} color="white" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </Camera>
+            )}
           </View>
+
+          {/* Camera Settings Panel (Web only) */}
+          {Platform.OS === 'web' && showCameraSettings && availableCameras.length > 1 && (
+            <View style={styles.settingsPanel}>
+              <View style={styles.settingsHeader}>
+                <Text style={styles.settingsTitle}>Select Camera</Text>
+                <TouchableOpacity onPress={() => setShowCameraSettings(false)}>
+                  <Ionicons name="close" size={24} color={theme.colors.text.primary} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={styles.settingsList}>
+                {availableCameras.map((camera) => (
+                  <TouchableOpacity
+                    key={camera.deviceId}
+                    style={[
+                      styles.cameraOption,
+                      selectedCameraId === camera.deviceId && styles.cameraOptionSelected
+                    ]}
+                    onPress={() => {
+                      updateWebCamera(camera.deviceId);
+                      setShowCameraSettings(false);
+                    }}
+                  >
+                    <Ionicons
+                      name={selectedCameraId === camera.deviceId ? "radio-button-on" : "radio-button-off"}
+                      size={20}
+                      color={selectedCameraId === camera.deviceId ? theme.colors.primary[600] : theme.colors.text.secondary}
+                    />
+                    <Text style={[
+                      styles.cameraOptionText,
+                      selectedCameraId === camera.deviceId && styles.cameraOptionTextSelected
+                    ]}>
+                      {camera.label || `Camera ${availableCameras.indexOf(camera) + 1}`}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
 
           {/* Stream Info */}
           <View style={styles.streamCard}>
@@ -554,11 +885,13 @@ const styles = StyleSheet.create({
   },
   cameraContainer: {
     width: '100%',
-    aspectRatio: 16 / 9,
+    maxHeight: Platform.OS === 'web' ? 400 : 300,
+    aspectRatio: Platform.OS === 'web' ? 16 / 9 : 4 / 3,
     borderRadius: theme.borderRadius.xl,
     overflow: 'hidden',
     marginBottom: theme.spacing.base,
     backgroundColor: theme.colors.gray[900],
+    alignSelf: 'center',
   },
   camera: {
     flex: 1,
@@ -566,6 +899,66 @@ const styles = StyleSheet.create({
   cameraOverlay: {
     flex: 1,
     backgroundColor: 'transparent',
+    position: 'relative',
+  },
+  cameraControls: {
+    position: 'absolute',
+    bottom: theme.spacing.md,
+    right: theme.spacing.md,
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+  },
+  cameraControlButton: {
+    width: 44,
+    height: 44,
+    borderRadius: theme.borderRadius.full,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...theme.shadows.md,
+  },
+  settingsPanel: {
+    backgroundColor: theme.colors.background.primary,
+    borderRadius: theme.borderRadius.xl,
+    marginBottom: theme.spacing.base,
+    maxHeight: 300,
+    ...theme.shadows.lg,
+  },
+  settingsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.gray[200],
+  },
+  settingsTitle: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.fontWeights.bold,
+    color: theme.colors.text.primary,
+  },
+  settingsList: {
+    maxHeight: 250,
+  },
+  cameraOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.gray[100],
+    gap: theme.spacing.sm,
+  },
+  cameraOptionSelected: {
+    backgroundColor: theme.colors.primary[50],
+  },
+  cameraOptionText: {
+    fontSize: theme.typography.sizes.base,
+    color: theme.colors.text.primary,
+    flex: 1,
+  },
+  cameraOptionTextSelected: {
+    fontWeight: theme.typography.fontWeights.semibold,
+    color: theme.colors.primary[700],
   },
   liveIndicator: {
     position: 'absolute',

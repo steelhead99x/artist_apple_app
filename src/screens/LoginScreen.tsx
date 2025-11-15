@@ -9,11 +9,14 @@ import {
   TouchableOpacity,
   Alert,
   Switch,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../services/AuthContext';
 import { Button, Input } from '../components/common';
 import apiService from '../services/api';
+import theme from '../theme';
 
 interface LoginScreenProps {
   navigation: {
@@ -29,7 +32,16 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   const [usePinLogin, setUsePinLogin] = useState(true); // PIN is default
   const [pinRequested, setPinRequested] = useState(false);
   const [isRequestingPin, setIsRequestingPin] = useState(false);
-  const { login, authenticateWithBiometric, biometricAvailable, biometricEnabled, error, clearError } = useAuth();
+  const { login, loginWithPin, authenticateWithBiometric, biometricAvailable, biometricEnabled, error, clearError } = useAuth();
+  const [fadeAnim] = useState(new Animated.Value(0));
+
+  React.useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   const handleRequestPin = async () => {
     clearError();
@@ -81,7 +93,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     }
 
     try {
-      await apiService.loginWithPin(email.trim().toLowerCase(), pinCode.trim());
+      await loginWithPin(email.trim().toLowerCase(), pinCode.trim());
       // Navigation is handled by the auth state change
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Invalid or expired PIN code. Please try again.';
@@ -147,16 +159,24 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.content}>
-          {/* Logo/Header */}
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <Ionicons name="musical-notes" size={48} color="#6366f1" />
+        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+          {/* Gradient Header */}
+          <LinearGradient
+            colors={theme.gradients.primary}
+            style={styles.gradientHeader}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <View style={styles.header}>
+              <View style={styles.logoContainer}>
+                <Ionicons name="musical-notes" size={56} color="white" />
+              </View>
+              <Text style={styles.title}>Artist Space</Text>
+              <Text style={styles.subtitle}>Connect. Create. Collaborate.</Text>
             </View>
-            <Text style={styles.title}>Artist Space</Text>
-            <Text style={styles.subtitle}>Connect. Create. Collaborate.</Text>
-          </View>
+          </LinearGradient>
 
           {/* Login Method Toggle */}
           <View style={styles.toggleContainer}>
@@ -337,11 +357,14 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           </Text>
 
           {/* Help */}
-          <TouchableOpacity style={styles.helpButton}>
-            <Ionicons name="help-circle-outline" size={20} color="#6366f1" />
+          <TouchableOpacity 
+            style={styles.helpButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="help-circle-outline" size={20} color={theme.colors.primary[500]} />
             <Text style={styles.helpText}>Need help signing in?</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -350,76 +373,103 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: theme.colors.background.secondary,
   },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
   },
   content: {
-    padding: 24,
-    paddingTop: 60,
+    padding: 0,
+    paddingTop: 0,
+  },
+  gradientHeader: {
+    paddingTop: Platform.OS === 'web' ? 40 : 60,
+    paddingBottom: 40,
+    paddingHorizontal: 24,
+    borderBottomLeftRadius: theme.borderRadius['2xl'],
+    borderBottomRightRadius: theme.borderRadius['2xl'],
+    marginBottom: 32,
+    ...theme.shadows.lg,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
   },
   logoContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: '#eef2ff',
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+    ...theme.shadows.md,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#1e293b',
+    fontSize: theme.typography.sizes['4xl'],
+    fontWeight: theme.typography.fontWeights.bold,
+    color: 'white',
     marginBottom: 8,
+    ...(Platform.OS === 'web' 
+      ? { textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' }
+      : {
+          textShadowColor: 'rgba(0, 0, 0, 0.1)',
+          textShadowOffset: { width: 0, height: 2 },
+          textShadowRadius: 4,
+        }
+    ),
   },
   subtitle: {
-    fontSize: 16,
-    color: '#64748b',
+    fontSize: theme.typography.sizes.base,
+    color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
+    fontWeight: theme.typography.fontWeights.medium,
   },
   toggleContainer: {
-    marginBottom: 24,
+    marginBottom: 32,
     alignItems: 'center',
+    paddingHorizontal: 24,
   },
   toggleLabel: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1e293b',
-    marginBottom: 12,
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.fontWeights.semibold,
+    color: theme.colors.text.primary,
+    marginBottom: 16,
   },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 16,
+    backgroundColor: theme.colors.background.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: theme.borderRadius.lg,
+    ...theme.shadows.sm,
   },
   toggleText: {
-    fontSize: 14,
-    color: '#94a3b8',
-    fontWeight: '500',
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.gray[400],
+    fontWeight: theme.typography.fontWeights.medium,
   },
   toggleTextActive: {
-    color: '#6366f1',
-    fontWeight: '600',
+    color: theme.colors.primary[500],
+    fontWeight: theme.typography.fontWeights.semibold,
   },
   form: {
     marginBottom: 24,
+    paddingHorizontal: 24,
   },
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 24,
+    paddingVertical: 8,
   },
   checkboxLabel: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#64748b',
+    marginLeft: 12,
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
+    fontWeight: theme.typography.fontWeights.medium,
   },
   requestPinButton: {
     marginTop: 8,
@@ -433,34 +483,38 @@ const styles = StyleSheet.create({
   linkButton: {
     padding: 12,
     alignItems: 'center',
+    marginTop: 8,
   },
   linkText: {
-    color: '#6366f1',
-    fontSize: 14,
-    fontWeight: '600',
+    color: theme.colors.primary[500],
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.fontWeights.semibold,
   },
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
+    marginVertical: 32,
+    paddingHorizontal: 24,
   },
   divider: {
     flex: 1,
     height: 1,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: theme.colors.gray[200],
   },
   dividerText: {
     marginHorizontal: 16,
-    fontSize: 14,
-    color: '#94a3b8',
-    fontWeight: '600',
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.gray[400],
+    fontWeight: theme.typography.fontWeights.semibold,
   },
   footer: {
     textAlign: 'center',
-    color: '#94a3b8',
-    marginTop: 32,
-    fontSize: 12,
+    color: theme.colors.gray[400],
+    marginTop: 40,
+    marginBottom: 24,
+    fontSize: theme.typography.sizes.xs,
     lineHeight: 18,
+    paddingHorizontal: 24,
   },
   helpButton: {
     flexDirection: 'row',
@@ -468,11 +522,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
     marginTop: 8,
+    marginBottom: 24,
   },
   helpText: {
     marginLeft: 8,
-    fontSize: 14,
-    color: '#6366f1',
-    fontWeight: '600',
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.primary[500],
+    fontWeight: theme.typography.fontWeights.semibold,
   },
 });

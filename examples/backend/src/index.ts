@@ -12,7 +12,15 @@ dotenv.config({ path: path.resolve(process.cwd(), '../.env') });
 
 const app = express();
 const PORT = process.env.PORT || 8787;
-const CORS_ORIGIN = process.env.CORS_ORIGIN?.split(',') || ['http://localhost:5173'];
+// Default CORS origins for development (Expo web, Vite, etc.)
+const DEFAULT_CORS_ORIGINS = [
+  'http://localhost:19006',  // Expo web dev server
+  'http://localhost:8081',   // Expo dev server
+  'http://localhost:5173',   // Vite dev server
+  'http://localhost:3000',   // Common React dev server
+  'http://localhost:3001',   // Proxy server
+];
+const CORS_ORIGIN = process.env.CORS_ORIGIN?.split(',').map(o => o.trim()).filter(Boolean) || DEFAULT_CORS_ORIGINS;
 
 // Trust proxy headers (needed when behind reverse proxy like DigitalOcean/Cloudflare)
 app.set('trust proxy', true);
@@ -58,9 +66,44 @@ app.use((req, res, next) => {
 
 // CORS Middleware
 app.use(cors({
-  origin: CORS_ORIGIN,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, Postman, curl)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Check if origin is in allowed list
+    if (CORS_ORIGIN.includes(origin) || CORS_ORIGIN.includes('*')) {
+      return callback(null, true);
+    }
+    
+    // In development, allow localhost origins
+    if (process.env.NODE_ENV !== 'production' && origin.startsWith('http://localhost:')) {
+      return callback(null, true);
+    }
+    
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// Handle OPTIONS preflight requests explicitly
+app.options('*', (req, res) => {
+  const origin = req.headers.origin;
+  if (origin && (CORS_ORIGIN.includes(origin) || CORS_ORIGIN.includes('*') || 
+      (process.env.NODE_ENV !== 'production' && origin.startsWith('http://localhost:')))) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.sendStatus(204); // No Content
+});
 
 // Body parser middleware
 app.use(express.json({ limit: '10mb' }));

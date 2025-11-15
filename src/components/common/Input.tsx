@@ -7,6 +7,7 @@ import {
   ViewStyle,
   TextInputProps,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -55,7 +56,21 @@ export function Input({
           styles.inputContainer,
           isFocused && styles.inputContainerFocused,
           error && styles.inputContainerError,
+          Platform.OS === 'web' && styles.webInputContainer,
         ]}
+        // @ts-ignore - web-specific prop
+        {...(Platform.OS === 'web' && {
+          onMouseEnter: (e: any) => {
+            if (!error && !isFocused && e.target) {
+              e.target.style.borderColor = '#a5b4fc';
+            }
+          },
+          onMouseLeave: (e: any) => {
+            if (!error && !isFocused && e.target) {
+              e.target.style.borderColor = '#cbd5e1';
+            }
+          },
+        })}
       >
         {icon && iconPosition === 'left' && (
           <Ionicons
@@ -140,19 +155,37 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#ffffff',
     paddingHorizontal: 12,
+    ...(Platform.OS === 'web' && {
+      transition: 'all 0.2s ease-in-out',
+    }),
+  },
+  webInputContainer: {
+    ...(Platform.OS === 'web' && {
+      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+    }),
   },
   inputContainerFocused: {
     borderColor: '#6366f1',
     borderWidth: 2,
+    ...(Platform.OS === 'web' && {
+      boxShadow: '0 0 0 3px rgba(99, 102, 241, 0.1)',
+    }),
   },
   inputContainerError: {
     borderColor: '#ef4444',
+    ...(Platform.OS === 'web' && {
+      boxShadow: '0 0 0 3px rgba(239, 68, 68, 0.1)',
+    }),
   },
   input: {
     flex: 1,
     paddingVertical: 12,
     fontSize: 16,
     color: '#1e293b',
+    ...(Platform.OS === 'web' && {
+      outlineStyle: 'none',
+      WebkitAppearance: 'none' as any,
+    }),
   },
   inputWithLeftIcon: {
     paddingLeft: 8,

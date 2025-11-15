@@ -7,6 +7,7 @@ import {
   View,
   ViewStyle,
   TextStyle,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -132,6 +133,7 @@ const ButtonComponent = (props: ButtonProps) => {
         sizeStyles[size],
         fullWidth && styles.fullWidth,
         isDisabled && styles.disabled,
+        Platform.OS === 'web' && !isDisabled && styles.webButton,
         style,
       ]}
       onPress={onPress}
@@ -142,6 +144,21 @@ const ButtonComponent = (props: ButtonProps) => {
       accessibilityLabel={accessibilityLabel || title}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
+      // @ts-ignore - web-specific prop
+      {...(Platform.OS === 'web' && {
+        onMouseEnter: (e: any) => {
+          if (!isDisabled && e.target) {
+            e.target.style.opacity = '0.9';
+            e.target.style.transform = 'translateY(-1px)';
+          }
+        },
+        onMouseLeave: (e: any) => {
+          if (!isDisabled && e.target) {
+            e.target.style.opacity = '1';
+            e.target.style.transform = 'translateY(0)';
+          }
+        },
+      })}
     >
       {loading ? (
         <ActivityIndicator color={textColorStyles[variant].color} />
@@ -188,6 +205,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
+    ...(Platform.OS === 'web' && {
+      transition: 'all 0.2s ease-in-out',
+      cursor: 'pointer',
+      userSelect: 'none' as any,
+    }),
+  },
+  webButton: {
+    ...(Platform.OS === 'web' && {
+      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    }),
   },
   content: {
     flexDirection: 'row',
@@ -202,6 +229,9 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.5,
+    ...(Platform.OS === 'web' && {
+      cursor: 'not-allowed',
+    }),
   },
   iconLeft: {
     marginRight: 8,

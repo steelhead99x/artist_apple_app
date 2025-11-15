@@ -20,6 +20,7 @@ interface AuthContextType {
   biometricAvailable: boolean;
   biometricEnabled: boolean;
   login: (credentials: LoginCredentials, rememberMe?: boolean) => Promise<void>;
+  loginWithPin: (email: string, pinCode: string) => Promise<void>;
   logout: () => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -119,6 +120,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (err) {
       const errorMessage = err instanceof ApiError ? err.message : 'Login failed. Please try again.';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Login with email and PIN code
+   */
+  const loginWithPin = async (email: string, pinCode: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await apiService.loginWithPin(email.trim().toLowerCase(), pinCode.trim());
+      setUser(response.user);
+
+      // Initialize E2EE encryption keys
+      try {
+        await messageService.initializeE2EE();
+        console.log('✅ E2EE initialized successfully');
+      } catch (e2eeError) {
+        console.error('⚠️ E2EE initialization failed (non-critical):', e2eeError);
+        // Don't fail login if E2EE initialization fails
+      }
+    } catch (err) {
+      const errorMessage = err instanceof ApiError ? err.message : 'Invalid or expired PIN code. Please try again.';
       setError(errorMessage);
       throw err;
     } finally {
@@ -291,6 +320,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         biometricAvailable,
         biometricEnabled,
         login,
+        loginWithPin,
         logout,
         register,
         refreshUser,

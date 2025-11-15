@@ -55,6 +55,21 @@ class ApiService {
     if (IS_WEB) {
       defaultHeaders['Accept'] = 'application/json';
       defaultHeaders['X-Requested-With'] = 'XMLHttpRequest';
+      
+      // Add browser-like headers to help bypass Cloudflare protection
+      // Note: Browsers automatically set and control these headers, so we can't set them:
+      // - Accept-Encoding (browser controls based on supported encodings)
+      // - Connection (browser controls)
+      // - Sec-Fetch-* headers (browser automatically sets based on request context)
+      // - TE (browser controls)
+      // We can only set headers that browsers allow us to override
+      defaultHeaders['Accept-Language'] = 'en-US,en;q=0.9';
+      defaultHeaders['Priority'] = 'u=0';
+      
+      // Note: We don't set Referer or Origin headers here because:
+      // 1. Browser automatically sets Origin based on the actual origin (localhost:8081)
+      // 2. Setting Referer to staging site when Origin is localhost might make Cloudflare MORE suspicious
+      // 3. The real solution is to use the proxy server for development or configure CORS_ORIGIN on staging
     }
 
     this.client = axios.create({
@@ -102,10 +117,51 @@ class ApiService {
           }
         }
 
+        // Handle rate limiting (429)
+        if (error.response?.status === 429) {
+          const responseData = error.response?.data as Record<string, unknown> | undefined;
+          const retryAfter = (responseData?.retryAfter as number) || (responseData?.retryAfterMinutes as number) || 1;
+          const message = 
+            (responseData?.error as string) ||
+            `Too many requests. Please wait ${retryAfter} minute${retryAfter !== 1 ? 's' : ''} before trying again.`;
+          
+          throw new ApiError(
+            message,
+            error.response?.status,
+            { ...error.response?.data, retryAfter }
+          );
+        }
+
         if (error.response?.status === 401) {
           // Clear token on unauthorized
           await deleteItemAsync('authToken');
-          // You might want to trigger logout in your app here
+          
+          // Provide more helpful error message for 401 on web platform
+          // This might be Cloudflare blocking the request
+          if (IS_WEB && API_BASE_URL.includes('stage-www.artist-space.com')) {
+            const responseData = error.response?.data as Record<string, unknown> | undefined;
+            const errorMessage = 
+              (responseData?.error as string) ||
+              (responseData?.message as string) ||
+              error.message;
+            
+            // Check if this might be a Cloudflare block
+            // Cloudflare adds 'cf-ray' header to all responses that go through it
+            const hasCloudflareHeader = error.response?.headers['cf-ray'] || error.response?.headers['CF-Ray'];
+            const isInvalidCredentials = errorMessage?.toLowerCase().includes('invalid credentials') || 
+                                       errorMessage?.toLowerCase().includes('invalid email or password');
+            
+            // If we got a 401 but it's not the standard "Invalid credentials" message,
+            // and we can see Cloudflare headers, it might be Cloudflare blocking us
+            if (hasCloudflareHeader && !isInvalidCredentials) {
+              throw new ApiError(
+                'Authentication failed. This might be due to Cloudflare protection blocking requests from localhost. ' +
+                'Try using the proxy server (npm run proxy) or ensure the staging server CORS_ORIGIN includes http://localhost:8081',
+                error.response?.status,
+                error.response?.data
+              );
+            }
+          }
         }
 
         const responseData = error.response?.data as Record<string, unknown> | undefined;

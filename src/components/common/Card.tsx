@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
-import { View, Text, StyleSheet, ViewStyle, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import theme from '../../theme';
 
 interface CardProps {
   children: React.ReactNode;
@@ -46,25 +47,17 @@ const CardComponent = (props: CardProps) => {
 
   const variantStyles: Record<string, ViewStyle> = {
     default: {
-      backgroundColor: '#ffffff',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
-      elevation: 1,
+      backgroundColor: theme.colors.background.primary,
+      ...theme.shadows.sm,
     },
     elevated: {
-      backgroundColor: '#ffffff',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.15,
-      shadowRadius: 8,
-      elevation: 4,
+      backgroundColor: theme.colors.background.primary,
+      ...theme.shadows.md,
     },
     outlined: {
-      backgroundColor: '#ffffff',
+      backgroundColor: theme.colors.background.primary,
       borderWidth: 1,
-      borderColor: '#e2e8f0',
+      borderColor: theme.colors.gray[200],
     },
   };
 
@@ -115,7 +108,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#eef2ff',
+    backgroundColor: theme.colors.primary[50],
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -124,13 +117,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1e293b',
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.fontWeights.bold,
+    color: theme.colors.text.primary,
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#64748b',
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
   },
 });

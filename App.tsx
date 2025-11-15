@@ -20,8 +20,13 @@ function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <NavigationContainer
+      key={isAuthenticated ? 'authenticated' : 'unauthenticated'}
+    >
+      <Stack.Navigator 
+        screenOptions={{ headerShown: false }}
+        initialRouteName={isAuthenticated ? 'Main' : 'Login'}
+      >
         {!isAuthenticated ? (
           <>
             <Stack.Screen

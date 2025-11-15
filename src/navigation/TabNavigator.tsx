@@ -8,6 +8,7 @@ import MessagesScreen from '../screens/MessagesScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import HelpScreen from '../screens/HelpScreen';
+import theme from '../theme';
 
 const Tab = createBottomTabNavigator();
 const ProfileStack = createNativeStackNavigator();
@@ -50,8 +51,24 @@ export default function TabNavigator() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: 'gray',
+        tabBarActiveTintColor: theme.colors.primary[500],
+        tabBarInactiveTintColor: theme.colors.gray[400],
+        tabBarStyle: {
+          backgroundColor: theme.colors.background.primary,
+          borderTopWidth: 1,
+          borderTopColor: theme.colors.gray[200],
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 60,
+        },
+        headerStyle: {
+          backgroundColor: theme.colors.background.primary,
+        },
+        headerTintColor: theme.colors.text.primary,
+        headerTitleStyle: {
+          fontWeight: theme.typography.fontWeights.semibold,
+          fontSize: theme.typography.sizes.lg,
+        },
         headerShown: true,
       })}
     >

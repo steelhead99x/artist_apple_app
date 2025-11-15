@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Camera } from 'expo-camera';
-import { useAuth } from '../services/AuthContext';
 import apiService from '../services/api';
 import theme from '../theme';
 
@@ -33,8 +32,8 @@ interface MuxStream {
 }
 
 export default function LiveStream({ navigation }: LiveStreamProps) {
-  const { user } = useAuth();
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+  const [hasMicPermission, setHasMicPermission] = useState<boolean | null>(null);
   const [stream, setStream] = useState<MuxStream | null>(null);
   const [loading, setLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -52,18 +51,23 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
 
   const requestPermissions = async () => {
     try {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
-      if (status !== 'granted') {
+      const cameraResult = await Camera.requestCameraPermissionsAsync();
+      const micResult = await Camera.requestMicrophonePermissionsAsync();
+
+      setHasPermission(cameraResult.status === 'granted');
+      setHasMicPermission(micResult.status === 'granted');
+
+      if (cameraResult.status !== 'granted' || micResult.status !== 'granted') {
         Alert.alert(
-          'Camera Permission Required',
-          'Please enable camera access in your device settings to use live streaming.'
+          'Permissions Required',
+          'Please enable camera and microphone access in your device settings to use live streaming.'
         );
       }
     } catch (error) {
-      console.error('Camera permission error:', error);
+      console.error('Permission error:', error);
       setHasPermission(false);
-      Alert.alert('Error', 'Failed to request camera permissions');
+      setHasMicPermission(false);
+      Alert.alert('Error', 'Failed to request permissions');
     }
   };
 
@@ -129,10 +133,6 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
       }
 
       setIsStreaming(true);
-      // In a real implementation, you would start the camera and begin streaming to Mux
-      // This would typically involve using expo-av or a native streaming library
-      // For now, we just mark the stream as started
-
       await apiService.put(`/mux/live-streams/${stream.id}/start`, {});
 
       Alert.alert('Streaming', 'Your live stream is now active! Share the playback URL with your audience.');
@@ -185,23 +185,39 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
     }
   };
 
-  if (hasPermission === null) {
+  if (hasPermission === null || hasMicPermission === null) {
     return (
       <View style={styles.container}>
         <ActivityIndicator size="large" color={theme.colors.primary[600]} />
+        <Text style={styles.permissionText}>Requesting permissions...</Text>
       </View>
     );
   }
 
-  if (hasPermission === false) {
+  if (hasPermission === false || hasMicPermission === false) {
     return (
       <View style={styles.container}>
         <View style={styles.permissionContainer}>
-          <Ionicons name="camera-off" size={64} color={theme.colors.text.secondary} />
-          <Text style={styles.permissionTitle}>Camera Permission Required</Text>
+          <Ionicons
+            name={!hasPermission ? "camera-off" : "mic-off"}
+            size={64}
+            color={theme.colors.text.secondary}
+          />
+          <Text style={styles.permissionTitle}>Permissions Required</Text>
           <Text style={styles.permissionText}>
-            Please enable camera access in your device settings to use live streaming.
+            {!hasPermission && !hasMicPermission
+              ? 'Please enable camera and microphone access in your device settings to use live streaming.'
+              : !hasPermission
+              ? 'Please enable camera access in your device settings to use live streaming.'
+              : 'Please enable microphone access in your device settings to use live streaming.'}
           </Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={requestPermissions}
+          >
+            <Ionicons name="refresh" size={20} color="white" />
+            <Text style={styles.retryButtonText}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -226,6 +242,24 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
 
       {showForm ? (
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Camera Preview */}
+          {hasPermission && hasMicPermission && (
+            <View style={styles.cameraContainer}>
+              <Camera
+                ref={cameraRef}
+                style={styles.camera}
+                type={Camera.Constants.Type.front}
+              >
+                <View style={styles.cameraOverlay}>
+                  <View style={styles.previewBadge}>
+                    <View style={styles.previewDot} />
+                    <Text style={styles.previewText}>PREVIEW</Text>
+                  </View>
+                </View>
+              </Camera>
+            </View>
+          )}
+
           <View style={styles.formCard}>
             <View style={styles.iconContainer}>
               <Ionicons name="videocam" size={48} color={theme.colors.primary[600]} />
@@ -556,6 +590,29 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.fontWeights.bold,
     color: 'white',
   },
+  previewBadge: {
+    position: 'absolute',
+    top: theme.spacing.md,
+    left: theme.spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(99, 102, 241, 0.9)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: theme.borderRadius.full,
+  },
+  previewDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'white',
+    marginRight: 6,
+  },
+  previewText: {
+    fontSize: 12,
+    fontWeight: theme.typography.fontWeights.bold,
+    color: 'white',
+  },
   streamCard: {
     backgroundColor: theme.colors.background.primary,
     borderRadius: theme.borderRadius.xl,
@@ -698,6 +755,22 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: theme.colors.primary[600],
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xl,
+    borderRadius: theme.borderRadius.lg,
+    marginTop: theme.spacing.lg,
+    gap: theme.spacing.sm,
+  },
+  retryButtonText: {
+    fontSize: theme.typography.sizes.base,
+    fontWeight: theme.typography.fontWeights.semibold,
+    color: 'white',
   },
   bottomPadding: {
     height: 20,

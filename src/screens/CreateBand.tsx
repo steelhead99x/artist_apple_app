@@ -9,7 +9,6 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../services/AuthContext';
 import { bandService } from '../services';
 import { Button } from '../components/common';
 import theme from '../theme';
@@ -42,7 +41,6 @@ const GENRES = [
 ];
 
 export default function CreateBand({ navigation }: CreateBandProps) {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
 
   // Form data
@@ -85,10 +83,19 @@ export default function CreateBand({ navigation }: CreateBandProps) {
         state: state.trim().toUpperCase() || undefined,
       };
 
-      const newBand = await bandService.createBand(bandData);
-      Alert.alert('Success', `${bandName} has been created successfully!`, [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
+      const result = await bandService.createBand(bandData);
+
+      if (result && result.success) {
+        Alert.alert(
+          'Success',
+          result.requiresApproval
+            ? `${bandName} has been created and is pending approval.`
+            : `${bandName} has been created successfully!`,
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      } else {
+        throw new Error(result?.message || 'Failed to create band');
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create band';
       Alert.alert('Error', errorMessage);

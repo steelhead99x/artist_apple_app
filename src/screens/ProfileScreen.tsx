@@ -18,41 +18,46 @@ export default function ProfileScreen({ navigation }: any) {
     await logout();
   };
 
+  const handleComingSoon = (feature: string) => {
+    // Placeholder for features not yet implemented
+    // Will be replaced with actual navigation when screens are ready
+  };
+
   const menuItems = [
     {
       id: 'edit-profile',
       icon: 'person-outline',
       title: 'Edit Profile',
       subtitle: 'Update your information',
-      action: () => console.log('Edit profile'),
+      action: () => handleComingSoon('Edit profile'),
     },
     {
       id: 'media-gallery',
       icon: 'images-outline',
       title: 'Media Gallery',
       subtitle: 'Manage photos, audio, and videos',
-      action: () => console.log('Media gallery'),
+      action: () => handleComingSoon('Media gallery'),
     },
     {
       id: 'availability',
       icon: 'calendar-outline',
       title: 'Availability',
       subtitle: 'Set your available dates',
-      action: () => console.log('Availability'),
+      action: () => handleComingSoon('Availability'),
     },
     {
       id: 'notifications',
       icon: 'notifications-outline',
       title: 'Notifications',
       subtitle: 'Manage notification settings',
-      action: () => console.log('Notifications'),
+      action: () => handleComingSoon('Notifications'),
     },
     {
       id: 'privacy',
       icon: 'shield-outline',
       title: 'Privacy & Security',
       subtitle: 'Control your privacy settings',
-      action: () => console.log('Privacy'),
+      action: () => handleComingSoon('Privacy'),
     },
     {
       id: 'help',

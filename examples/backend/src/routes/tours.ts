@@ -5,6 +5,51 @@ import { convertToEth, isValidCurrency } from '../utils/currency.js';
 
 const router = Router();
 
+// GET /api/tours/my-tours - Get all tour dates for current user's bands
+router.get('/my-tours', authenticateToken, async (req, res) => {
+  try {
+    const user = (req as any).user;
+
+    // Get all tours for bands where user is owner or active member
+    const queryText = `
+      SELECT DISTINCT
+        esc.*,
+        b.band_name,
+        v.venue_name,
+        v.city,
+        v.state,
+        v.address,
+        v.contact_email as venue_contact_email,
+        k.attendance,
+        k.bar_sales,
+        k.new_customers
+      FROM event_status_computed esc
+      JOIN tour_dates td ON esc.id = td.id
+      JOIN bands b ON td.band_id = b.id
+      JOIN venues v ON td.venue_id = v.id
+      LEFT JOIN tour_kpis k ON esc.id = k.tour_date_id
+      WHERE td.band_id IN (
+        -- Bands where user is owner
+        SELECT id FROM bands WHERE user_id = $1
+        UNION
+        -- Bands where user is active member
+        SELECT band_id FROM band_members
+        WHERE user_id = $1 AND status = 'active'
+      )
+      ORDER BY esc.date ASC, esc.start_time ASC
+    `;
+
+    const result = await query(queryText, [user.userId]);
+    res.json(result.rows);
+  } catch (error: any) {
+    console.error('Get my tours error:', error);
+    res.status(500).json({
+      error: 'Failed to fetch your tours',
+      details: process.env.NODE_ENV === 'development' ? error?.message : undefined
+    });
+  }
+});
+
 // GET /api/tours/tour/:tourId - Get all tour dates for a specific tour
 router.get('/tour/:tourId', async (req, res) => {
   try {

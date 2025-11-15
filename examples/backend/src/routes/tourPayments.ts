@@ -8,6 +8,40 @@ const router = Router();
 // Configure Decimal.js for financial calculations (2 decimal places)
 Decimal.set({ precision: 20, rounding: Decimal.ROUND_HALF_UP });
 
+// GET /api/tour-payments/my-payments - Get all payments for current user (across all their bands)
+router.get('/my-payments', authenticateToken, async (req, res) => {
+  try {
+    const user = (req as any).user;
+
+    // Get all payments for bands where user is owner or active member
+    const result = await query(`
+      SELECT DISTINCT tpd.*
+      FROM tour_payment_details tpd
+      WHERE tpd.band_id IN (
+        -- Bands where user is owner
+        SELECT id FROM bands WHERE user_id = $1
+        UNION
+        -- Bands where user is active member
+        SELECT band_id FROM band_members
+        WHERE user_id = $1 AND status = 'active'
+      )
+      OR tpd.band_id IN (
+        -- Also include payments where user has a direct payout
+        SELECT tp.tour_date_id
+        FROM tour_payments tp
+        JOIN tour_member_payouts tmp ON tmp.tour_payment_id = tp.id
+        WHERE tmp.user_id = $1
+      )
+      ORDER BY tpd.tour_date DESC, tpd.created_at DESC
+    `, [user.userId]);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get my payments error:', error);
+    res.status(500).json({ error: 'Failed to fetch payments' });
+  }
+});
+
 // GET /api/tour-payments/tour/:tourId - Get payment details for a specific tour
 router.get('/tour/:tourId', authenticateToken, async (req, res) => {
   try {

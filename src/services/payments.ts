@@ -173,6 +173,18 @@ class PaymentService {
   async confirmPayment(paymentIntentId: string): Promise<any> {
     return await apiService.post(`/payments/${paymentIntentId}/confirm`, {});
   }
+
+  // ============================================================================
+  // USER PAYMENTS (ARTIST VIEW)
+  // ============================================================================
+
+  /**
+   * Get my payments as an artist
+   * Returns all payments the current user has received from gigs
+   */
+  async getMyPayments(): Promise<TourPayment[]> {
+    return await apiService.get('/tour-payments/my-payments');
+  }
 }
 
 export default new PaymentService();

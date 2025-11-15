@@ -3,8 +3,12 @@ module.exports = function(api) {
 
   return {
     presets: [
+      ['@babel/preset-typescript', {
+        allowDeclareFields: true,
+        isTSX: true,
+        allExtensions: true,
+      }],
       'babel-preset-expo',
-      ['@babel/preset-typescript', { allowDeclareFields: true, onlyRemoveTypeImports: true }],
     ],
   };
 };

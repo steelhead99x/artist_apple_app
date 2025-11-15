@@ -33,15 +33,17 @@ interface CardProps {
  * </Card>
  * ```
  */
-const CardComponent = ({
-  children,
-  title,
-  subtitle,
-  icon,
-  onPress,
-  variant = 'default',
-  style,
-}: CardProps) {
+const CardComponent = (props: CardProps) => {
+  const {
+    children,
+    title,
+    subtitle,
+    icon,
+    onPress,
+    variant = 'default',
+    style,
+  } = props;
+
   const variantStyles: Record<string, ViewStyle> = {
     default: {
       backgroundColor: '#ffffff',

@@ -55,21 +55,23 @@ interface ButtonProps {
  * />
  * ```
  */
-const ButtonComponent = ({
-  title,
-  onPress,
-  variant = 'primary',
-  size = 'medium',
-  loading = false,
-  disabled = false,
-  icon,
-  iconPosition = 'left',
-  fullWidth = false,
-  style,
-  textStyle,
-  accessibilityLabel,
-  accessibilityHint,
-}: ButtonProps) {
+const ButtonComponent = (props: ButtonProps) => {
+  const {
+    title,
+    onPress,
+    variant = 'primary',
+    size = 'medium',
+    loading = false,
+    disabled = false,
+    icon,
+    iconPosition = 'left',
+    fullWidth = false,
+    style,
+    textStyle,
+    accessibilityLabel,
+    accessibilityHint,
+  } = props;
+
   const isDisabled = disabled || loading;
 
   const variantStyles: Record<string, ViewStyle> = {

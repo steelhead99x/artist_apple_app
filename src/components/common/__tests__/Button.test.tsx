@@ -175,11 +175,9 @@ describe('Button Component', () => {
       );
 
       const button = getByRole('button');
-      expect(button.props.style).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ width: '100%' })
-        ])
-      );
+      const styles = Array.isArray(button.props.style) ? button.props.style : [button.props.style];
+      const hasFullWidth = styles.some((style: any) => style?.width === '100%');
+      expect(hasFullWidth).toBe(true);
     });
 
     it('should not be full width by default', () => {
@@ -202,11 +200,9 @@ describe('Button Component', () => {
       );
 
       const button = getByRole('button');
-      expect(button.props.style).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ marginTop: 20 })
-        ])
-      );
+      const styles = Array.isArray(button.props.style) ? button.props.style : [button.props.style];
+      const hasMarginTop = styles.some((style: any) => style?.marginTop === 20);
+      expect(hasMarginTop).toBe(true);
     });
 
     it('should accept custom text style', () => {

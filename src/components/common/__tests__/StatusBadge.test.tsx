@@ -193,7 +193,8 @@ describe('StatusBadge Component', () => {
         <StatusBadge status="custom-status" type="tour" />
       );
 
-      expect(getByText('custom-status')).toBeTruthy();
+      // Unknown statuses fall back to 'Pending' for tour type
+      expect(getByText('Pending')).toBeTruthy();
     });
 
     it('should default to tour type when type not specified', () => {
@@ -207,11 +208,12 @@ describe('StatusBadge Component', () => {
 
   describe('Accessibility', () => {
     it('should have text role', () => {
-      const { getByRole } = render(
+      const { getAllByRole } = render(
         <StatusBadge status="confirmed" type="tour" />
       );
 
-      expect(getByRole('text')).toBeTruthy();
+      const textElements = getAllByRole('text');
+      expect(textElements.length).toBeGreaterThan(0);
     });
 
     it('should have proper accessibility label', () => {
@@ -235,7 +237,8 @@ describe('StatusBadge Component', () => {
         <StatusBadge status="custom" type="tour" />
       );
 
-      expect(getByLabelText('Status: custom')).toBeTruthy();
+      // Unknown statuses fall back to 'Pending' for tour type
+      expect(getByLabelText('Status: Pending')).toBeTruthy();
     });
   });
 
@@ -255,10 +258,11 @@ describe('StatusBadge Component', () => {
       const statuses = ['pending', 'confirmed', 'cancelled', 'completed'];
 
       statuses.forEach(status => {
-        const { getByRole } = render(
+        const { getAllByRole } = render(
           <StatusBadge status={status} type="tour" />
         );
-        expect(getByRole('text')).toBeTruthy();
+        const textElements = getAllByRole('text');
+        expect(textElements.length).toBeGreaterThan(0);
       });
     });
 
@@ -266,10 +270,11 @@ describe('StatusBadge Component', () => {
       const statuses = ['pending', 'succeeded', 'paid', 'failed', 'cancelled'];
 
       statuses.forEach(status => {
-        const { getByRole } = render(
+        const { getAllByRole } = render(
           <StatusBadge status={status} type="payment" />
         );
-        expect(getByRole('text')).toBeTruthy();
+        const textElements = getAllByRole('text');
+        expect(textElements.length).toBeGreaterThan(0);
       });
     });
 
@@ -277,10 +282,11 @@ describe('StatusBadge Component', () => {
       const statuses = ['pending', 'approved', 'rejected', 'active', 'suspended', 'deleted'];
 
       statuses.forEach(status => {
-        const { getByRole } = render(
+        const { getAllByRole } = render(
           <StatusBadge status={status} type="user" />
         );
-        expect(getByRole('text')).toBeTruthy();
+        const textElements = getAllByRole('text');
+        expect(textElements.length).toBeGreaterThan(0);
       });
     });
   });

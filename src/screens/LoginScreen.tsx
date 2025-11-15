@@ -1,68 +1,75 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
-  Alert,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
 } from 'react-native';
-import * as LocalAuthentication from 'expo-local-authentication';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../services/AuthContext';
+import { Button, Input } from '../components/common';
 
-export default function LoginScreen() {
-  const [username, setUsername] = useState('');
+export default function LoginScreen({ navigation }: any) {
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const { login } = useAuth();
-
-  useEffect(() => {
-    checkBiometric();
-  }, []);
-
-  const checkBiometric = async () => {
-    const compatible = await LocalAuthentication.hasHardwareAsync();
-    const enrolled = await LocalAuthentication.isEnrolledAsync();
-    setBiometricAvailable(compatible && enrolled);
-  };
+  const [rememberMe, setRememberMe] = useState(false);
+  const { login, authenticateWithBiometric, biometricAvailable, biometricEnabled, error, clearError } = useAuth();
 
   const handleLogin = async () => {
-    if (!username || !password) {
-      Alert.alert('Error', 'Please enter username and password');
+    // Clear any previous errors
+    clearError();
+
+    // Validation
+    if (!email.trim()) {
+      Alert.alert('Email Required', 'Please enter your email address.');
       return;
     }
 
-    setLoading(true);
+    if (!password) {
+      Alert.alert('Password Required', 'Please enter your password.');
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+
     try {
-      await login(username, password);
-    } catch (error: any) {
-      Alert.alert(
-        'Login Failed',
-        error.response?.data?.message || 'Invalid credentials'
-      );
-    } finally {
-      setLoading(false);
+      await login({ email: email.trim().toLowerCase(), password }, rememberMe);
+      // Navigation is handled by the auth state change
+    } catch (err) {
+      // Error is displayed via the AuthContext
+      console.error('Login error:', err);
     }
   };
 
-  const handleBiometricAuth = async () => {
+  const handleBiometricLogin = async () => {
     try {
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Authenticate to login',
-        fallbackLabel: 'Use password',
-      });
-
-      if (result.success) {
-        // In production, retrieve stored credentials and auto-login
-        Alert.alert('Success', 'Biometric authentication successful');
+      const success = await authenticateWithBiometric();
+      if (!success) {
+        Alert.alert(
+          'Biometric Login',
+          'Biometric authentication is not set up. Please log in with your email and password first.'
+        );
       }
-    } catch (error) {
-      console.error('Biometric auth error:', error);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to authenticate with biometrics.');
     }
+  };
+
+  const handleForgotPassword = () => {
+    navigation.navigate('ForgotPassword');
+  };
+
+  const handleCreateAccount = () => {
+    navigation.navigate('Register');
   };
 
   return (
@@ -70,67 +77,121 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.content}>
-        <Text style={styles.title}>Artist Space</Text>
-        <Text style={styles.subtitle}>Connect. Create. Collaborate.</Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.content}>
+          {/* Logo/Header */}
+          <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              <Ionicons name="musical-notes" size={48} color="#6366f1" />
+            </View>
+            <Text style={styles.title}>Artist Space</Text>
+            <Text style={styles.subtitle}>Connect. Create. Collaborate.</Text>
+          </View>
 
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Username or Email"
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+          {/* Login Form */}
+          <View style={styles.form}>
+            <Input
+              label="Email"
+              placeholder="your@email.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              icon="mail-outline"
+              error={error?.toLowerCase().includes('email') ? error : undefined}
+            />
 
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoCapitalize="none"
-          />
+            <Input
+              label="Password"
+              placeholder="Enter your password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              icon="lock-closed-outline"
+              error={error?.toLowerCase().includes('password') ? error : undefined}
+            />
 
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Login</Text>
-            )}
-          </TouchableOpacity>
-
-          {biometricAvailable && (
+            {/* Remember Me */}
             <TouchableOpacity
-              style={styles.biometricButton}
-              onPress={handleBiometricAuth}
+              style={styles.checkboxContainer}
+              onPress={() => setRememberMe(!rememberMe)}
+              activeOpacity={0.7}
             >
-              <Text style={styles.biometricText}>
-                Use {Platform.OS === 'ios' ? 'Face ID / Touch ID' : 'Fingerprint'}
-              </Text>
+              <Ionicons
+                name={rememberMe ? 'checkbox' : 'square-outline'}
+                size={24}
+                color={rememberMe ? '#6366f1' : '#94a3b8'}
+              />
+              <Text style={styles.checkboxLabel}>Remember me (for biometric login)</Text>
             </TouchableOpacity>
-          )}
 
-          <TouchableOpacity style={styles.linkButton}>
-            <Text style={styles.linkText}>Forgot Password?</Text>
-          </TouchableOpacity>
+            {/* Login Button */}
+            <Button
+              title="Log In"
+              onPress={handleLogin}
+              variant="primary"
+              size="large"
+              fullWidth
+              icon="log-in-outline"
+              style={styles.loginButton}
+            />
 
-          <View style={styles.divider} />
+            {/* Biometric Login */}
+            {biometricAvailable && biometricEnabled && (
+              <Button
+                title={`Use ${Platform.OS === 'ios' ? 'Face ID / Touch ID' : 'Fingerprint'}`}
+                onPress={handleBiometricLogin}
+                variant="outline"
+                size="medium"
+                fullWidth
+                icon={Platform.OS === 'ios' ? 'finger-print' : 'fingerprint'}
+                style={styles.biometricButton}
+              />
+            )}
 
-          <TouchableOpacity style={styles.secondaryButton}>
-            <Text style={styles.secondaryButtonText}>Create Account</Text>
+            {/* Forgot Password */}
+            <TouchableOpacity
+              style={styles.linkButton}
+              onPress={handleForgotPassword}
+            >
+              <Text style={styles.linkText}>Forgot your password?</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Divider */}
+          <View style={styles.dividerContainer}>
+            <View style={styles.divider} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.divider} />
+          </View>
+
+          {/* Create Account */}
+          <Button
+            title="Create New Account"
+            onPress={handleCreateAccount}
+            variant="outline"
+            size="large"
+            fullWidth
+            icon="person-add-outline"
+          />
+
+          {/* Footer */}
+          <Text style={styles.footer}>
+            For Artists • Bands • Studios • Venues • Booking Agents
+          </Text>
+
+          {/* Help */}
+          <TouchableOpacity style={styles.helpButton}>
+            <Ionicons name="help-circle-outline" size={20} color="#6366f1" />
+            <Text style={styles.helpText}>Need help signing in?</Text>
           </TouchableOpacity>
         </View>
-
-        <Text style={styles.footer}>
-          For Artists • Bands • Studios • Managers
-        </Text>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -138,89 +199,102 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8fafc',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   content: {
-    flex: 1,
+    padding: 24,
+    paddingTop: 60,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logoContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: '#eef2ff',
+    alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    marginBottom: 16,
   },
   title: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#1e293b',
     marginBottom: 8,
-    color: '#333',
   },
   subtitle: {
     fontSize: 16,
+    color: '#64748b',
     textAlign: 'center',
-    color: '#666',
-    marginBottom: 40,
   },
   form: {
-    width: '100%',
+    marginBottom: 24,
   },
-  input: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 12,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 8,
+  checkboxContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    marginBottom: 24,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  checkboxLabel: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#64748b',
+  },
+  loginButton: {
+    marginBottom: 12,
   },
   biometricButton: {
-    padding: 15,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  biometricText: {
-    color: '#007AFF',
-    fontSize: 16,
+    marginBottom: 16,
   },
   linkButton: {
-    padding: 10,
+    padding: 12,
     alignItems: 'center',
-    marginTop: 8,
   },
   linkText: {
-    color: '#007AFF',
+    color: '#6366f1',
     fontSize: 14,
+    fontWeight: '600',
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 24,
   },
   divider: {
+    flex: 1,
     height: 1,
-    backgroundColor: '#ddd',
-    marginVertical: 20,
+    backgroundColor: '#e2e8f0',
   },
-  secondaryButton: {
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#007AFF',
-  },
-  secondaryButtonText: {
-    color: '#007AFF',
-    fontSize: 16,
+  dividerText: {
+    marginHorizontal: 16,
+    fontSize: 14,
+    color: '#94a3b8',
     fontWeight: '600',
   },
   footer: {
     textAlign: 'center',
-    color: '#999',
-    marginTop: 30,
+    color: '#94a3b8',
+    marginTop: 32,
     fontSize: 12,
+    lineHeight: 18,
+  },
+  helpButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    marginTop: 8,
+  },
+  helpText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#6366f1',
+    fontWeight: '600',
   },
 });

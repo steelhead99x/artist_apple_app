@@ -3,6 +3,8 @@ import * as SecureStore from 'expo-secure-store';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { Alert } from 'react-native';
 import apiService, { ApiError } from './api';
+import messageService from './messages';
+import encryptionService from './encryption';
 import { User, LoginCredentials, RegisterData } from '../types';
 
 interface AuthContextType {
@@ -83,7 +85,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await apiService.login(credentials);
       setUser(response.user);
 
+      // Initialize E2EE encryption keys
+      try {
+        await messageService.initializeE2EE();
+        console.log('✅ E2EE initialized successfully');
+      } catch (e2eeError) {
+        console.error('⚠️ E2EE initialization failed (non-critical):', e2eeError);
+        // Don't fail login if E2EE initialization fails
+      }
+
       // Save credentials if remember me is checked (for biometric login)
+      // SECURITY NOTE: This stores credentials encrypted in SecureStore
+      // Consider using refresh tokens instead for better security
       if (rememberMe) {
         await SecureStore.setItemAsync(
           CREDENTIALS_KEY,
@@ -107,7 +120,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       await apiService.logout();
       setUser(null);
+
+      // Clear encryption keys for security
+      await encryptionService.clearKeys();
+      messageService.clearPublicKeyCache();
+
       // Optionally clear biometric settings
+      // Note: We don't clear biometric settings so user can re-login with biometric
       // await SecureStore.deleteItemAsync(BIOMETRIC_KEY);
       // await SecureStore.deleteItemAsync(CREDENTIALS_KEY);
     } catch (error) {
@@ -130,6 +149,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Auto-login after successful registration
       if (response.token && response.user) {
         setUser(response.user);
+
+        // Initialize E2EE encryption keys for new user
+        try {
+          await messageService.initializeE2EE();
+          console.log('✅ E2EE initialized for new user');
+        } catch (e2eeError) {
+          console.error('⚠️ E2EE initialization failed (non-critical):', e2eeError);
+        }
       }
     } catch (err) {
       const errorMessage = err instanceof ApiError ? err.message : 'Registration failed. Please try again.';

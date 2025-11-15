@@ -8,10 +8,14 @@ import {
 } from '../types';
 
 // Configuration
-// IMPORTANT: Update this to your Digital Ocean backend URL
-const API_BASE_URL = __DEV__
-  ? 'http://localhost:8787/api' // For local development
-  : 'https://your-backend.digitalocean.app/api'; // For production
+// Load from environment variables (configured in .env file)
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8787/api';
+const API_TIMEOUT = parseInt(process.env.EXPO_PUBLIC_API_TIMEOUT || '15000', 10);
+
+// Validate API URL is configured
+if (!process.env.EXPO_PUBLIC_API_BASE_URL) {
+  console.warn('⚠️ EXPO_PUBLIC_API_BASE_URL not configured. Using default localhost. Please create .env file from .env.example');
+}
 
 // Error handling helper
 export class ApiError extends Error {
@@ -34,7 +38,7 @@ class ApiService {
       headers: {
         'Content-Type': 'application/json',
       },
-      timeout: 15000, // 15 seconds
+      timeout: API_TIMEOUT,
     });
 
     // Add auth token to requests

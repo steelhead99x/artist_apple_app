@@ -402,6 +402,82 @@ router.get('/contacts', authenticateToken, async (req, res) => {
   }
 });
 
+// ============================================================================
+// E2EE KEY MANAGEMENT ENDPOINTS
+// ============================================================================
+
+// POST /api/messages/upload-public-key - Upload user's E2EE public key
+router.post('/upload-public-key', authenticateToken, async (req, res) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { public_key } = req.body;
+
+    if (!public_key) {
+      return res.status(400).json({ error: 'public_key is required' });
+    }
+
+    // Validate public key format (Base64)
+    const base64Regex = /^[A-Za-z0-9+/=]+$/;
+    if (!base64Regex.test(public_key)) {
+      return res.status(400).json({ error: 'Invalid public key format (must be Base64)' });
+    }
+
+    // Update user's public key
+    await query(
+      `UPDATE users
+       SET e2ee_public_key = $1, e2ee_key_updated_at = NOW()
+       WHERE id = $2`,
+      [public_key, userId]
+    );
+
+    res.json({
+      success: true,
+      message: 'Public key uploaded successfully'
+    });
+  } catch (error) {
+    console.error('Upload public key error:', error);
+    res.status(500).json({ error: 'Failed to upload public key' });
+  }
+});
+
+// GET /api/messages/public-key/:userId - Get a user's E2EE public key
+router.get('/public-key/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Get user's public key
+    const result = await query(
+      'SELECT e2ee_public_key, e2ee_key_updated_at FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const { e2ee_public_key, e2ee_key_updated_at } = result.rows[0];
+
+    if (!e2ee_public_key) {
+      return res.status(404).json({
+        error: 'User has not set up encryption yet',
+        code: 'NO_PUBLIC_KEY'
+      });
+    }
+
+    res.json({
+      public_key: e2ee_public_key,
+      updated_at: e2ee_key_updated_at
+    });
+  } catch (error) {
+    console.error('Get public key error:', error);
+    res.status(500).json({ error: 'Failed to fetch public key' });
+  }
+});
+
+// ============================================================================
+// MESSAGING ENDPOINTS
+// ============================================================================
+
 // GET /api/messages/booking-agent - Get assigned booking agent (for venues)
 // NOTE: This must come BEFORE /:otherUserId route to avoid route matching conflicts
 router.get('/booking-agent', authenticateToken, async (req, res) => {

@@ -88,3 +88,84 @@ export function validateFloat(value: any, fieldName: string, min?: number): { va
   return { valid: true };
 }
 
+// ============================================================================
+// XSS PROTECTION & INPUT SANITIZATION
+// ============================================================================
+
+/**
+ * Sanitize string input to prevent XSS attacks
+ * Strips HTML tags and dangerous characters
+ */
+export function sanitizeString(input: string): string {
+  if (!input || typeof input !== 'string') return '';
+
+  // Remove HTML tags
+  let sanitized = input.replace(/<[^>]*>/g, '');
+
+  // Encode special characters
+  sanitized = sanitized
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
+
+  return sanitized;
+}
+
+/**
+ * Validate and sanitize user input text
+ */
+export function validateText(text: string, fieldName: string, maxLength: number = 1000): { valid: boolean; error?: string; sanitized?: string } {
+  if (!text || typeof text !== 'string') {
+    return { valid: false, error: `${fieldName} must be a string` };
+  }
+
+  const trimmed = text.trim();
+
+  if (trimmed.length === 0) {
+    return { valid: false, error: `${fieldName} cannot be empty` };
+  }
+
+  if (trimmed.length > maxLength) {
+    return { valid: false, error: `${fieldName} must be no more than ${maxLength} characters` };
+  }
+
+  // Check for SQL injection patterns (defense in depth - we use parameterized queries)
+  const sqlInjectionPatterns = /(\bOR\b|\bAND\b|\bUNION\b|\bSELECT\b|\bDROP\b|\bINSERT\b|\bUPDATE\b|\bDELETE\b).*[=;]/i;
+  if (sqlInjectionPatterns.test(trimmed)) {
+    return { valid: false, error: `${fieldName} contains invalid characters` };
+  }
+
+  return { valid: true, sanitized: sanitizeString(trimmed) };
+}
+
+/**
+ * Validate UUID format
+ */
+export function validateUUID(uuid: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+}
+
+/**
+ * Validate URL format
+ */
+export function validateURL(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Validate phone number (basic international format)
+ */
+export function validatePhone(phone: string): boolean {
+  const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
+  return phoneRegex.test(phone);
+}
+

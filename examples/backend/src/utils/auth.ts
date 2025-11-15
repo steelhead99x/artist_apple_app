@@ -28,9 +28,16 @@ export interface JWTPayload {
   wallet_address?: string;
 }
 
+// SECURITY: Reduced from 7d to 1d for better security
+// Users should use refresh tokens for longer sessions
 export function generateToken(payload: JWTPayload): string {
   // JWT_SECRET is guaranteed to be set (either from env or generated for dev)
-  return jwt.sign(payload, JWT_SECRET!, { expiresIn: '7d' });
+  return jwt.sign(payload, JWT_SECRET!, { expiresIn: '1d' });
+}
+
+// Generate refresh token (valid for 30 days)
+export function generateRefreshToken(payload: JWTPayload): string {
+  return jwt.sign(payload, JWT_SECRET!, { expiresIn: '30d' });
 }
 
 export function verifyToken(token: string): JWTPayload {

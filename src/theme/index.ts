@@ -255,7 +255,7 @@ export const getGradient = (gradientName: keyof typeof theme.gradients) => {
 // Export responsive utilities
 export { responsive } from './responsive';
 
-// Export layout helpers
-export { layout } from './layout';
+// Note: layout is exported separately from './layout' to avoid circular dependencies
+// Import it directly: import { layout } from '../theme/layout'
 
 export default theme;

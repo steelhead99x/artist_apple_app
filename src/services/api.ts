@@ -118,8 +118,8 @@ class ApiService {
     const response = await this.client.post('/auth/register', data);
 
     if (response.data.token) {
-      await SecureStore.setItemAsync('authToken', response.data.token);
-      await SecureStore.setItemAsync('userData', JSON.stringify(response.data.user));
+      await setItemAsync('authToken', response.data.token);
+      await setItemAsync('userData', JSON.stringify(response.data.user));
     }
 
     return response.data;

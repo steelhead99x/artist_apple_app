@@ -1,311 +1,310 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
-  TouchableOpacity,
   ScrollView,
+  RefreshControl,
+  TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../services/AuthContext';
-import { BookingRequest, Event } from '../types';
+import { tourService } from '../services';
+import {
+  Card,
+  LoadingSpinner,
+  ErrorMessage,
+  EmptyState,
+  StatusBadge,
+  Button,
+} from '../components/common';
+import { TourDate } from '../types';
 
-// Mock booking data
-const MOCK_BOOKINGS: BookingRequest[] = [
-  {
-    id: '1',
-    requesterId: 'venue1',
-    targetId: 'user1',
-    type: 'performance',
-    eventDate: '2025-11-20T20:00:00Z',
-    status: 'pending',
-    details: 'Jazz night at The Blue Note. 2-hour set.',
-    offer: {
-      amount: 1500,
-      currency: 'USD',
-      terms: 'Payment on completion',
-    },
-    createdAt: '2025-11-10T10:00:00Z',
-    updatedAt: '2025-11-10T10:00:00Z',
-  },
-  {
-    id: '2',
-    requesterId: 'user1',
-    targetId: 'studio1',
-    type: 'recording',
-    eventDate: '2025-11-25T14:00:00Z',
-    endDate: '2025-11-25T18:00:00Z',
-    status: 'accepted',
-    details: 'Recording session for new album',
-    offer: {
-      amount: 600,
-      currency: 'USD',
-      terms: '4 hours studio time',
-    },
-    createdAt: '2025-11-08T15:30:00Z',
-    updatedAt: '2025-11-09T09:00:00Z',
-  },
-];
+type ViewType = 'upcoming' | 'past';
 
-const MOCK_EVENTS: Event[] = [
-  {
-    id: 'e1',
-    title: 'Summer Jazz Festival',
-    date: '2025-12-05T19:00:00Z',
-    venueId: 'venue2',
-    artistIds: ['user1', 'artist2'],
-    description: 'Annual jazz festival featuring local artists',
-    status: 'upcoming',
-    createdAt: '2025-10-15T10:00:00Z',
-  },
-];
-
-type ViewType = 'bookings' | 'events';
-
-export default function CalendarScreen() {
+export default function CalendarScreen({ navigation }: any) {
   const { user } = useAuth();
-  const [viewType, setViewType] = useState<ViewType>('bookings');
-  const [bookings] = useState(MOCK_BOOKINGS);
-  const [events] = useState(MOCK_EVENTS);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [viewType, setViewType] = useState<ViewType>('upcoming');
+  const [upcomingTours, setUpcomingTours] = useState<TourDate[]>([]);
+  const [pastTours, setPastTours] = useState<TourDate[]>([]);
+
+  useEffect(() => {
+    loadTours();
+  }, []);
+
+  const loadTours = async () => {
+    try {
+      setError(null);
+      const tours = await tourService.getMyTours();
+
+      const now = new Date();
+      const upcoming = tours.filter((t: TourDate) => {
+        const tourDate = new Date(t.date);
+        return tourDate >= now && t.status !== 'cancelled';
+      });
+      const past = tours.filter((t: TourDate) => {
+        const tourDate = new Date(t.date);
+        return tourDate < now || t.status === 'completed';
+      });
+
+      setUpcomingTours(upcoming.sort((a: TourDate, b: TourDate) =>
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      ));
+      setPastTours(past.sort((a: TourDate, b: TourDate) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      ));
+    } catch (err: any) {
+      console.error('Load tours error:', err);
+      setError(err.message || 'Failed to load calendar');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadTours();
+  }, []);
+
+  const handleTourPress = (tour: TourDate) => {
+    navigation.navigate('TourDetails', { tourId: tour.id });
+  };
+
+  const handleAddGig = () => {
+    navigation.navigate('CreateTour');
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
+      weekday: 'long',
+      month: 'long',
       day: 'numeric',
       year: 'numeric',
     });
   };
 
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return '#FFA500';
-      case 'accepted':
-        return '#4CAF50';
-      case 'rejected':
-        return '#F44336';
-      case 'cancelled':
-        return '#999';
-      case 'completed':
-        return '#2196F3';
-      default:
-        return '#666';
+  const formatTime = (timeString: string) => {
+    if (!timeString) return '';
+    // Handle both full datetime strings and time-only strings
+    if (timeString.includes('T') || timeString.includes(':')) {
+      const date = new Date(timeString);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+        });
+      }
     }
+    return timeString;
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'time-outline';
-      case 'accepted':
-        return 'checkmark-circle-outline';
-      case 'rejected':
-        return 'close-circle-outline';
-      case 'cancelled':
-        return 'ban-outline';
-      case 'completed':
-        return 'checkmark-done-outline';
-      default:
-        return 'help-outline';
-    }
-  };
-
-  const renderBookingCard = ({ item }: { item: BookingRequest }) => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
+  const renderTourCard = (tour: TourDate) => (
+    <Card
+      key={tour.id}
+      onPress={() => handleTourPress(tour)}
+      variant="elevated"
+      style={styles.tourCard}
+    >
+      <View style={styles.tourHeader}>
+        {/* Date Badge */}
         <View style={styles.dateContainer}>
           <Text style={styles.dateDay}>
-            {new Date(item.eventDate).getDate()}
+            {new Date(tour.date).getDate()}
           </Text>
           <Text style={styles.dateMonth}>
-            {new Date(item.eventDate).toLocaleDateString('en-US', {
-              month: 'short',
-            })}
+            {new Date(tour.date).toLocaleDateString('en-US', { month: 'short' })}
+          </Text>
+          <Text style={styles.dateYear}>
+            {new Date(tour.date).getFullYear()}
           </Text>
         </View>
-        <View style={styles.cardInfo}>
-          <View style={styles.statusRow}>
-            <Ionicons
-              name={getStatusIcon(item.status)}
-              size={16}
-              color={getStatusColor(item.status)}
-            />
-            <Text
-              style={[
-                styles.statusText,
-                { color: getStatusColor(item.status) },
-              ]}
-            >
-              {item.status.toUpperCase()}
+
+        {/* Tour Info */}
+        <View style={styles.tourInfo}>
+          <View style={styles.tourTitleRow}>
+            <Text style={styles.venueName}>{tour.venue_name}</Text>
+            <StatusBadge status={tour.status} type="tour" />
+          </View>
+
+          <View style={styles.tourMetaRow}>
+            <Ionicons name="location" size={14} color="#64748b" />
+            <Text style={styles.tourLocation}>
+              {tour.city}, {tour.state}
             </Text>
           </View>
-          <Text style={styles.cardTitle}>{item.type.replace('_', ' ')}</Text>
-          <Text style={styles.cardTime}>
-            {formatTime(item.eventDate)}
-            {item.endDate && ` - ${formatTime(item.endDate)}`}
-          </Text>
+
+          {tour.start_time && (
+            <View style={styles.tourMetaRow}>
+              <Ionicons name="time" size={14} color="#64748b" />
+              <Text style={styles.tourTime}>
+                {formatTime(tour.start_time)}
+                {tour.end_time && ` - ${formatTime(tour.end_time)}`}
+              </Text>
+            </View>
+          )}
+
+          {tour.band_name && (
+            <View style={styles.tourMetaRow}>
+              <Ionicons name="musical-notes" size={14} color="#64748b" />
+              <Text style={styles.bandName}>{tour.band_name}</Text>
+            </View>
+          )}
         </View>
       </View>
 
-      <Text style={styles.cardDetails}>{item.details}</Text>
-
-      {item.offer && (
-        <View style={styles.offerContainer}>
-          <Ionicons name="cash-outline" size={16} color="#4CAF50" />
-          <Text style={styles.offerText}>
-            ${item.offer.amount} {item.offer.currency}
+      {/* Payment Info */}
+      {tour.payment_amount && (
+        <View style={styles.paymentContainer}>
+          <Ionicons name="cash" size={16} color="#10b981" />
+          <Text style={styles.paymentAmount}>
+            ${tour.payment_amount}
           </Text>
-          <Text style={styles.offerTerms}>• {item.offer.terms}</Text>
+          {tour.payment_status && (
+            <StatusBadge
+              status={tour.payment_status}
+              type="payment"
+              style={styles.paymentBadge}
+            />
+          )}
         </View>
       )}
 
-      {item.status === 'pending' && (
-        <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.acceptButton}>
-            <Ionicons name="checkmark" size={20} color="#fff" />
-            <Text style={styles.acceptButtonText}>Accept</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.rejectButton}>
-            <Ionicons name="close" size={20} color="#F44336" />
-            <Text style={styles.rejectButtonText}>Decline</Text>
-          </TouchableOpacity>
-        </View>
+      {/* Notes */}
+      {tour.notes && (
+        <Text style={styles.tourNotes} numberOfLines={2}>
+          {tour.notes}
+        </Text>
       )}
 
-      {item.status === 'accepted' && (
-        <TouchableOpacity style={styles.viewButton}>
-          <Text style={styles.viewButtonText}>View Details</Text>
-          <Ionicons name="chevron-forward" size={16} color="#007AFF" />
+      {/* Quick Actions */}
+      <View style={styles.quickActions}>
+        {tour.venue_contact_email && (
+          <TouchableOpacity style={styles.quickAction}>
+            <Ionicons name="mail-outline" size={16} color="#6366f1" />
+            <Text style={styles.quickActionText}>Contact</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity style={styles.quickAction}>
+          <Ionicons name="information-circle-outline" size={16} color="#6366f1" />
+          <Text style={styles.quickActionText}>Details</Text>
         </TouchableOpacity>
-      )}
-    </View>
-  );
-
-  const renderEventCard = ({ item }: { item: Event }) => (
-    <View style={styles.card}>
-      <View style={styles.cardHeader}>
-        <View style={styles.dateContainer}>
-          <Text style={styles.dateDay}>{new Date(item.date).getDate()}</Text>
-          <Text style={styles.dateMonth}>
-            {new Date(item.date).toLocaleDateString('en-US', { month: 'short' })}
-          </Text>
-        </View>
-        <View style={styles.cardInfo}>
-          <Text style={styles.cardTitle}>{item.title}</Text>
-          <Text style={styles.cardTime}>{formatTime(item.date)}</Text>
-        </View>
       </View>
-
-      <Text style={styles.cardDetails}>{item.description}</Text>
-
-      {item.ticketUrl && (
-        <TouchableOpacity style={styles.ticketButton}>
-          <Ionicons name="ticket-outline" size={16} color="#007AFF" />
-          <Text style={styles.ticketButtonText}>Get Tickets</Text>
-        </TouchableOpacity>
-      )}
-    </View>
+    </Card>
   );
+
+  if (loading && !refreshing) {
+    return <LoadingSpinner message="Loading your calendar..." fullScreen />;
+  }
+
+  if (error && !upcomingTours.length && !pastTours.length) {
+    return (
+      <ErrorMessage
+        title="Couldn't Load Calendar"
+        message={error}
+        onRetry={loadTours}
+        fullScreen
+      />
+    );
+  }
+
+  const displayTours = viewType === 'upcoming' ? upcomingTours : pastTours;
 
   return (
     <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Calendar</Text>
+        <Text style={styles.headerSubtitle}>
+          {upcomingTours.length} upcoming {upcomingTours.length === 1 ? 'gig' : 'gigs'}
+        </Text>
+      </View>
+
       {/* View Type Selector */}
       <View style={styles.selectorContainer}>
         <TouchableOpacity
           style={[
             styles.selectorButton,
-            viewType === 'bookings' && styles.selectorButtonActive,
+            viewType === 'upcoming' && styles.selectorButtonActive,
           ]}
-          onPress={() => setViewType('bookings')}
+          onPress={() => setViewType('upcoming')}
         >
           <Ionicons
-            name="calendar-outline"
-            size={20}
-            color={viewType === 'bookings' ? '#fff' : '#007AFF'}
+            name="calendar"
+            size={18}
+            color={viewType === 'upcoming' ? '#ffffff' : '#64748b'}
           />
           <Text
             style={[
               styles.selectorText,
-              viewType === 'bookings' && styles.selectorTextActive,
+              viewType === 'upcoming' && styles.selectorTextActive,
             ]}
           >
-            Bookings
+            Upcoming ({upcomingTours.length})
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[
             styles.selectorButton,
-            viewType === 'events' && styles.selectorButtonActive,
+            viewType === 'past' && styles.selectorButtonActive,
           ]}
-          onPress={() => setViewType('events')}
+          onPress={() => setViewType('past')}
         >
           <Ionicons
-            name="musical-notes-outline"
-            size={20}
-            color={viewType === 'events' ? '#fff' : '#007AFF'}
+            name="checkmark-done"
+            size={18}
+            color={viewType === 'past' ? '#ffffff' : '#64748b'}
           />
           <Text
             style={[
               styles.selectorText,
-              viewType === 'events' && styles.selectorTextActive,
+              viewType === 'past' && styles.selectorTextActive,
             ]}
           >
-            Events
+            Past ({pastTours.length})
           </Text>
         </TouchableOpacity>
       </View>
 
       {/* Content */}
-      {viewType === 'bookings' ? (
-        <FlatList
-          data={bookings}
-          renderItem={renderBookingCard}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="calendar-outline" size={64} color="#ccc" />
-              <Text style={styles.emptyText}>No bookings yet</Text>
-              <Text style={styles.emptySubtext}>
-                Your upcoming bookings will appear here
-              </Text>
-            </View>
-          }
-        />
-      ) : (
-        <FlatList
-          data={events}
-          renderItem={renderEventCard}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="musical-notes-outline" size={64} color="#ccc" />
-              <Text style={styles.emptyText}>No events scheduled</Text>
-              <Text style={styles.emptySubtext}>
-                Your events will appear here
-              </Text>
-            </View>
-          }
-        />
-      )}
+      <ScrollView
+        style={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#6366f1" />
+        }
+      >
+        {displayTours.length === 0 ? (
+          <EmptyState
+            icon={viewType === 'upcoming' ? 'calendar-outline' : 'checkmark-done-circle-outline'}
+            title={viewType === 'upcoming' ? 'No Upcoming Gigs' : 'No Past Gigs'}
+            message={
+              viewType === 'upcoming'
+                ? 'You have no upcoming performances scheduled. Create a new gig or wait for booking requests from venues!'
+                : 'Your completed gigs will appear here once you finish performances.'
+            }
+            actionLabel={viewType === 'upcoming' ? 'Add Gig' : undefined}
+            onAction={viewType === 'upcoming' ? handleAddGig : undefined}
+          />
+        ) : (
+          displayTours.map((tour) => renderTourCard(tour))
+        )}
+
+        <View style={styles.bottomPadding} />
+      </ScrollView>
 
       {/* Add Button */}
-      <TouchableOpacity style={styles.addButton}>
-        <Ionicons name="add" size={28} color="#fff" />
-      </TouchableOpacity>
+      {viewType === 'upcoming' && (
+        <TouchableOpacity style={styles.addButton} onPress={handleAddGig}>
+          <Ionicons name="add" size={28} color="#fff" />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -313,14 +312,32 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8fafc',
+  },
+  header: {
+    backgroundColor: '#ffffff',
+    padding: 20,
+    paddingTop: 60,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: 4,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#64748b',
   },
   selectorContainer: {
     flexDirection: 'row',
     padding: 16,
-    backgroundColor: '#fff',
+    gap: 12,
+    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#e2e8f0',
   },
   selectorButton: {
     flex: 1,
@@ -328,188 +345,145 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: '#f8fafc',
     borderWidth: 1,
-    borderColor: '#007AFF',
-    marginHorizontal: 4,
+    borderColor: '#e2e8f0',
   },
   selectorButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#6366f1',
+    borderColor: '#6366f1',
   },
   selectorText: {
     marginLeft: 8,
     fontSize: 14,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#64748b',
   },
   selectorTextActive: {
-    color: '#fff',
+    color: '#ffffff',
   },
-  listContainer: {
+  content: {
+    flex: 1,
     padding: 16,
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+  tourCard: {
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
-  cardHeader: {
+  tourHeader: {
     flexDirection: 'row',
     marginBottom: 12,
   },
   dateContainer: {
     width: 60,
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    backgroundColor: '#6366f1',
+    borderRadius: 10,
     marginRight: 12,
-    padding: 8,
   },
   dateDay: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '700',
+    color: '#ffffff',
   },
   dateMonth: {
-    fontSize: 12,
-    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#ffffff',
     textTransform: 'uppercase',
+    marginTop: 2,
   },
-  cardInfo: {
+  dateYear: {
+    fontSize: 10,
+    color: '#c7d2fe',
+    marginTop: 2,
+  },
+  tourInfo: {
     flex: 1,
   },
-  statusRow: {
+  tourTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  venueName: {
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginRight: 8,
+  },
+  tourMetaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 4,
   },
-  statusText: {
-    marginLeft: 4,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-    textTransform: 'capitalize',
-  },
-  cardTime: {
+  tourLocation: {
     fontSize: 14,
-    color: '#666',
+    color: '#64748b',
+    marginLeft: 6,
   },
-  cardDetails: {
+  tourTime: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
-    lineHeight: 20,
+    color: '#64748b',
+    marginLeft: 6,
   },
-  offerContainer: {
+  bandName: {
+    fontSize: 14,
+    color: '#64748b',
+    marginLeft: 6,
+  },
+  paymentContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f9f0',
+    backgroundColor: '#f0fdf4',
     padding: 12,
     borderRadius: 8,
     marginBottom: 12,
   },
-  offerText: {
+  paymentAmount: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#4CAF50',
+    fontWeight: '700',
+    color: '#10b981',
     marginLeft: 8,
-  },
-  offerTerms: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 8,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  acceptButton: {
     flex: 1,
+  },
+  paymentBadge: {
+    marginLeft: 'auto',
+  },
+  tourNotes: {
+    fontSize: 13,
+    color: '#64748b',
+    lineHeight: 18,
+    marginBottom: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  quickActions: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  quickAction: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#4CAF50',
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#eef2ff',
+    borderRadius: 6,
   },
-  acceptButtonText: {
-    color: '#fff',
-    fontSize: 16,
+  quickActionText: {
+    fontSize: 12,
     fontWeight: '600',
+    color: '#6366f1',
     marginLeft: 4,
-  },
-  rejectButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#F44336',
-  },
-  rejectButtonText: {
-    color: '#F44336',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  viewButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-  },
-  viewButtonText: {
-    color: '#007AFF',
-    fontSize: 14,
-    fontWeight: '500',
-    marginRight: 4,
-  },
-  ticketButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f0f8ff',
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  ticketButtonText: {
-    color: '#007AFF',
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#999',
-    marginTop: 16,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#ccc',
-    marginTop: 8,
-    textAlign: 'center',
   },
   addButton: {
     position: 'absolute',
@@ -518,13 +492,16 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#6366f1',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  bottomPadding: {
+    height: 80,
   },
 });

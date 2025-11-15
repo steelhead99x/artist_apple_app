@@ -22,6 +22,13 @@ class TourService {
   }
 
   /**
+   * Get my tour dates (as a band member)
+   */
+  async getMyTours(): Promise<TourDate[]> {
+    return await apiService.get('/tours/my-tours');
+  }
+
+  /**
    * Get all tour dates for a specific tour
    */
   async getTourDates(tourId: string): Promise<TourDate[]> {

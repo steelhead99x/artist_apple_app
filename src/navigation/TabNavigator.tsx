@@ -8,10 +8,38 @@ import MessagesScreen from '../screens/MessagesScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import HelpScreen from '../screens/HelpScreen';
+import CreateBand from '../screens/CreateBand';
+import CreateTour from '../screens/CreateTour';
+import TourDetails from '../screens/TourDetails';
+import LiveStream from '../screens/LiveStream';
 import theme from '../theme';
 
 const Tab = createBottomTabNavigator();
+const HomeStack = createNativeStackNavigator();
+const CalendarStack = createNativeStackNavigator();
 const ProfileStack = createNativeStackNavigator();
+
+function HomeStackScreen() {
+  return (
+    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+      <HomeStack.Screen name="HomeMain" component={EnhancedHomeScreen} />
+      <HomeStack.Screen name="CreateBand" component={CreateBand} />
+      <HomeStack.Screen name="CreateTour" component={CreateTour} />
+      <HomeStack.Screen name="TourDetails" component={TourDetails} />
+      <HomeStack.Screen name="LiveStream" component={LiveStream} />
+    </HomeStack.Navigator>
+  );
+}
+
+function CalendarStackScreen() {
+  return (
+    <CalendarStack.Navigator screenOptions={{ headerShown: false }}>
+      <CalendarStack.Screen name="CalendarMain" component={CalendarScreen} />
+      <CalendarStack.Screen name="CreateTour" component={CreateTour} />
+      <CalendarStack.Screen name="TourDetails" component={TourDetails} />
+    </CalendarStack.Navigator>
+  );
+}
 
 function ProfileStackScreen() {
   return (
@@ -74,7 +102,7 @@ export default function TabNavigator() {
     >
       <Tab.Screen
         name="Home"
-        component={EnhancedHomeScreen}
+        component={HomeStackScreen}
         options={{ title: 'Artist Space' }}
       />
       <Tab.Screen
@@ -89,7 +117,7 @@ export default function TabNavigator() {
       />
       <Tab.Screen
         name="Calendar"
-        component={CalendarScreen}
+        component={CalendarStackScreen}
         options={{ title: 'Calendar' }}
       />
       <Tab.Screen

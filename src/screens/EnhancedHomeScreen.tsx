@@ -144,7 +144,7 @@ export default function EnhancedHomeScreen({ navigation }: EnhancedHomeScreenPro
             <QuickAction
               icon="videocam"
               label="Live Session"
-              onPress={() => {/* Navigate to LiveKit */}}
+              onPress={() => navigation.navigate('LiveStream')}
               gradient={theme.gradients.ocean}
             />
           </ScrollView>

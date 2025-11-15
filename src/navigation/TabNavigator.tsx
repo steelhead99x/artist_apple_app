@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import HomeScreen from '../screens/HomeScreen';
+import EnhancedHomeScreen from '../screens/EnhancedHomeScreen';
 import DiscoverScreen from '../screens/DiscoverScreen';
 import MessagesScreen from '../screens/MessagesScreen';
 import CalendarScreen from '../screens/CalendarScreen';
@@ -45,7 +45,7 @@ export default function TabNavigator() {
     >
       <Tab.Screen
         name="Home"
-        component={HomeScreen}
+        component={EnhancedHomeScreen}
         options={{ title: 'Artist Space' }}
       />
       <Tab.Screen

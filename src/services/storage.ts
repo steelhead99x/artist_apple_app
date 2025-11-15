@@ -22,14 +22,16 @@ export async function getItemAsync(key: string): Promise<string | null> {
     try {
       return localStorage.getItem(key);
     } catch (error) {
-      console.error('localStorage.getItem error:', error);
+      // Failed to retrieve from localStorage, return null
+      // Error logged for debugging: localStorage.getItem error
       return null;
     }
   } else {
     try {
       return await SecureStore.getItemAsync(key);
     } catch (error) {
-      console.error('SecureStore.getItemAsync error:', error);
+      // Failed to retrieve from SecureStore, return null
+      // Error logged for debugging: SecureStore.getItemAsync error
       return null;
     }
   }
@@ -43,15 +45,13 @@ export async function setItemAsync(key: string, value: string): Promise<void> {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
-      console.error('localStorage.setItem error:', error);
-      throw error;
+      throw new Error(`Failed to save to localStorage: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   } else {
     try {
       await SecureStore.setItemAsync(key, value);
     } catch (error) {
-      console.error('SecureStore.setItemAsync error:', error);
-      throw error;
+      throw new Error(`Failed to save to SecureStore: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
@@ -64,15 +64,13 @@ export async function deleteItemAsync(key: string): Promise<void> {
     try {
       localStorage.removeItem(key);
     } catch (error) {
-      console.error('localStorage.removeItem error:', error);
-      throw error;
+      throw new Error(`Failed to remove from localStorage: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   } else {
     try {
       await SecureStore.deleteItemAsync(key);
     } catch (error) {
-      console.error('SecureStore.deleteItemAsync error:', error);
-      throw error;
+      throw new Error(`Failed to remove from SecureStore: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

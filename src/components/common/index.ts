@@ -11,3 +11,4 @@ export { StatusBadge } from './StatusBadge';
 export { GlassCard } from './GlassCard';
 export { QuickAction } from './QuickAction';
 export { AnimatedStat } from './AnimatedStat';
+export { default as ErrorBoundary } from './ErrorBoundary';

@@ -7,6 +7,7 @@ import RegisterScreen from './src/screens/RegisterScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import TabNavigator from './src/navigation/TabNavigator';
 import { AuthProvider, useAuth } from './src/services/AuthContext';
+import ErrorBoundary from './src/components/common/ErrorBoundary';
 
 const Stack = createNativeStackNavigator();
 
@@ -50,8 +51,10 @@ function AppNavigator() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppNavigator />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppNavigator />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

@@ -23,7 +23,19 @@ import { BandMember } from '../types';
 
 type TabType = 'active' | 'pending';
 
-export default function ManageMembersScreen({ route, navigation }: any) {
+interface ManageMembersScreenProps {
+  route: {
+    params: {
+      bandId: string;
+      bandName: string;
+    };
+  };
+  navigation: {
+    goBack: () => void;
+  };
+}
+
+export default function ManageMembersScreen({ route, navigation }: ManageMembersScreenProps) {
   const { bandId, bandName } = route.params;
 
   const [loading, setLoading] = useState(true);
@@ -52,9 +64,9 @@ export default function ManageMembersScreen({ route, navigation }: any) {
 
       setMembers(allMembers.filter((m: BandMember) => m.status === 'approved' || m.status === 'active'));
       setPendingRequests(pending);
-    } catch (err: any) {
-      console.error('Load members error:', err);
-      setError(err.message || 'Failed to load members');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load members';
+      setError(errorMessage);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -79,8 +91,9 @@ export default function ManageMembersScreen({ route, navigation }: any) {
               await bandService.approveMember(bandId, memberId);
               Alert.alert('Success', `${userName} has been approved!`);
               loadMembers();
-            } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to approve member');
+            } catch (err) {
+              const errorMessage = err instanceof Error ? err.message : 'Failed to approve member';
+              Alert.alert('Error', errorMessage);
             }
           },
         },
@@ -102,8 +115,9 @@ export default function ManageMembersScreen({ route, navigation }: any) {
               await bandService.rejectMember(bandId, memberId);
               Alert.alert('Rejected', `${userName}'s request has been rejected`);
               loadMembers();
-            } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to reject member');
+            } catch (err) {
+              const errorMessage = err instanceof Error ? err.message : 'Failed to reject member';
+              Alert.alert('Error', errorMessage);
             }
           },
         },

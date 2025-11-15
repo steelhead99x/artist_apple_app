@@ -1,5 +1,5 @@
 import apiService from './api';
-import { RecordingStudio, StudioSession } from '../types';
+import { RecordingStudio, StudioSession, Equipment, RecordingFile } from '../types';
 
 /**
  * Studio API Service
@@ -33,7 +33,7 @@ class StudioService {
     address?: string;
     city?: string;
     state?: string;
-    equipment?: any;
+    equipment?: Equipment;
     daw_software?: string;
     hourly_rate?: number;
     eth_wallet?: string;
@@ -98,7 +98,7 @@ class StudioService {
     data: {
       end_time?: string;
       session_notes?: string;
-      recording_files?: any;
+      recording_files?: RecordingFile[];
       status?: string;
     }
   ): Promise<StudioSession> {

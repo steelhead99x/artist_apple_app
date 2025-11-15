@@ -232,7 +232,7 @@ export interface RecordingStudio {
   address?: string;
   city?: string;
   state?: string;
-  equipment?: any;
+  equipment?: Equipment;
   daw_software?: string;
   hourly_rate?: number;
   eth_wallet?: string;
@@ -244,6 +244,38 @@ export interface RecordingStudio {
   // Joined fields
   owner_name?: string;
   email?: string;
+}
+
+// Equipment and recording file types
+export interface Equipment {
+  [key: string]: string | number | boolean | string[];
+}
+
+export interface RecordingFile {
+  filename: string;
+  url?: string;
+  size?: number;
+  format?: string;
+  uploadedAt?: string;
+}
+
+export interface SocialLinks {
+  facebook?: string;
+  instagram?: string;
+  twitter?: string;
+  youtube?: string;
+  spotify?: string;
+  soundcloud?: string;
+  bandcamp?: string;
+  [key: string]: string | undefined;
+}
+
+export interface FeatureValue {
+  [key: string]: string | number | boolean | null;
+}
+
+export interface Metadata {
+  [key: string]: string | number | boolean | null | undefined;
 }
 
 export type SessionStatus = 'active' | 'completed' | 'cancelled';
@@ -260,7 +292,7 @@ export interface StudioSession {
   duration_minutes?: number;
   connection_type?: ConnectionType;
   session_notes?: string;
-  recording_files?: any;
+  recording_files?: RecordingFile[];
   status: SessionStatus;
   livekit_room_name?: string;
   created_at: string;
@@ -352,6 +384,7 @@ export interface Message {
   sender_id: string;
   recipient_id: string;
   encrypted_content: string;
+  nonce?: string; // Base64 encoded nonce for E2EE decryption
   sender_public_key?: string;
   recipient_public_key?: string;
   read: boolean;
@@ -360,6 +393,7 @@ export interface Message {
   sender_name?: string;
   sender_user_type?: UserType;
   recipient_name?: string;
+  content?: string; // Decrypted content (client-side only)
 }
 
 export interface Conversation {
@@ -505,7 +539,7 @@ export interface UserFeature {
   id: string;
   user_id: string;
   feature_type: string;
-  feature_value?: any;
+  feature_value?: FeatureValue;
   assigned_by: string;
   active: boolean;
   expires_at?: string;
@@ -518,7 +552,7 @@ export interface UserState {
   user_id: string;
   state_type: string;
   state_value: string;
-  metadata?: any;
+  metadata?: Metadata;
   assigned_by: string;
   active: boolean;
   created_at: string;
@@ -631,7 +665,7 @@ export interface UpdateBandData {
   genre?: string;
   eth_wallet?: string;
   website?: string;
-  social_links?: any;
+  social_links?: SocialLinks;
   booking_manager_id?: string;
   contact_phone?: string;
   contact_email?: string;

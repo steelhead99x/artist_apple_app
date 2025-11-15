@@ -18,7 +18,13 @@ import theme from '../theme';
 
 const { width } = Dimensions.get('window');
 
-export default function EnhancedHomeScreen({ navigation }: any) {
+interface EnhancedHomeScreenProps {
+  navigation: {
+    navigate: (screen: string, params?: Record<string, unknown>) => void;
+  };
+}
+
+export default function EnhancedHomeScreen({ navigation }: EnhancedHomeScreenProps) {
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [greeting, setGreeting] = useState('');
@@ -37,7 +43,8 @@ export default function EnhancedHomeScreen({ navigation }: any) {
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     // Simulate data refresh
-    setTimeout(() => setRefreshing(false), 1000);
+    const timer = setTimeout(() => setRefreshing(false), 1000);
+    return () => clearTimeout(timer);
   }, []);
 
   return (

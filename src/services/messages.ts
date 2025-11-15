@@ -39,14 +39,14 @@ class MessageService {
     // Decrypt messages
     const keyPair = await encryptionService.getStoredKeyPair();
     if (!keyPair) {
-      console.warn('No encryption keys found - messages may not decrypt');
+      // No encryption keys found - messages may not decrypt
       return messages;
     }
 
     // Decrypt each message
     return Promise.all(
       messages.map(async (message) => {
-        if (message.encrypted_content && message.iv) {
+        if (message.encrypted_content && message.nonce) {
           try {
             // Determine if we're the sender or recipient
             const isSender = message.sender_id === (await this.getCurrentUserId());
@@ -59,7 +59,7 @@ class MessageService {
             const decryptedContent = encryptionService.decryptMessage(
               {
                 ciphertext: message.encrypted_content,
-                nonce: message.iv,
+                nonce: message.nonce,
               },
               otherUserPublicKey,
               keyPair.secretKey
@@ -70,7 +70,7 @@ class MessageService {
               content: decryptedContent,
             };
           } catch (error) {
-            console.error('Failed to decrypt message:', error);
+            // Failed to decrypt message
             return {
               ...message,
               content: '[Unable to decrypt message]',

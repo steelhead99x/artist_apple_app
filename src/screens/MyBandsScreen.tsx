@@ -13,7 +13,13 @@ import { bandService } from '../services';
 import { Card, LoadingSpinner, ErrorMessage, EmptyState, StatusBadge, Button } from '../components/common';
 import { Band, BandLimits } from '../types';
 
-export default function MyBandsScreen({ navigation }: any) {
+interface MyBandsScreenProps {
+  navigation: {
+    navigate: (screen: string, params?: Record<string, unknown>) => void;
+  };
+}
+
+export default function MyBandsScreen({ navigation }: MyBandsScreenProps) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,8 +39,8 @@ export default function MyBandsScreen({ navigation }: any) {
       ]);
       setBands(bandsData);
       setLimits(limitsData);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load bands');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load bands');
     } finally {
       setLoading(false);
       setRefreshing(false);

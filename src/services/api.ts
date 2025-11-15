@@ -35,7 +35,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public status?: number,
-    public data?: any
+    public data?: unknown
   ) {
     super(message);
     this.name = 'ApiError';
@@ -90,21 +90,14 @@ class ApiService {
             error.code === 'ECONNABORTED';
 
           if (isCorsError) {
-            const corsMessage = 
+            const corsMessage =
               'CORS error: The API server is not configured to allow requests from this origin. ' +
               'Please ensure the backend has CORS headers configured, or contact the API administrator.';
-            
-            console.error('CORS Error:', {
-              url: error.config?.url,
-              baseURL: error.config?.baseURL,
-              message: error.message,
-              code: error.code,
-            });
 
             throw new ApiError(
               corsMessage,
               undefined,
-              { corsError: true, originalError: error.message }
+              { corsError: true, originalError: error.message, url: error.config?.url }
             );
           }
         }
@@ -115,9 +108,10 @@ class ApiService {
           // You might want to trigger logout in your app here
         }
 
+        const responseData = error.response?.data as Record<string, unknown> | undefined;
         const message =
-          (error.response?.data as any)?.error ||
-          (error.response?.data as any)?.message ||
+          (responseData?.error as string) ||
+          (responseData?.message as string) ||
           error.message ||
           'An unexpected error occurred';
 
@@ -216,27 +210,27 @@ class ApiService {
   // GENERIC API METHODS
   // ============================================================================
 
-  async get<T = any>(endpoint: string, params?: any): Promise<T> {
+  async get<T = unknown>(endpoint: string, params?: Record<string, unknown>): Promise<T> {
     const response = await this.client.get(endpoint, { params });
     return response.data;
   }
 
-  async post<T = any>(endpoint: string, data: any): Promise<T> {
+  async post<T = unknown>(endpoint: string, data: unknown): Promise<T> {
     const response = await this.client.post(endpoint, data);
     return response.data;
   }
 
-  async put<T = any>(endpoint: string, data: any): Promise<T> {
+  async put<T = unknown>(endpoint: string, data: unknown): Promise<T> {
     const response = await this.client.put(endpoint, data);
     return response.data;
   }
 
-  async patch<T = any>(endpoint: string, data: any): Promise<T> {
+  async patch<T = unknown>(endpoint: string, data: unknown): Promise<T> {
     const response = await this.client.patch(endpoint, data);
     return response.data;
   }
 
-  async delete<T = any>(endpoint: string): Promise<T> {
+  async delete<T = unknown>(endpoint: string): Promise<T> {
     const response = await this.client.delete(endpoint);
     return response.data;
   }
@@ -277,9 +271,14 @@ class ApiService {
     return await getItemAsync('authToken');
   }
 
-  async getStoredUser(): Promise<any | null> {
-    const userJson = await getItemAsync('userData');
-    return userJson ? JSON.parse(userJson) : null;
+  async getStoredUser(): Promise<unknown | null> {
+    try {
+      const userJson = await getItemAsync('userData');
+      return userJson ? JSON.parse(userJson) : null;
+    } catch (error) {
+      // Failed to parse stored user data, return null
+      return null;
+    }
   }
 }
 

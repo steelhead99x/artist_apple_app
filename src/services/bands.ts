@@ -10,7 +10,25 @@ import {
   ArtistDashboardData,
   PaymentLedgerEntry,
   BandPaymentSummary,
+  SubscriptionPlan,
+  UserSubscription,
 } from '../types';
+
+interface SubscriptionResponse {
+  current_plan?: SubscriptionPlan;
+  subscription?: UserSubscription;
+  features?: Record<string, boolean | number>;
+  limits?: Record<string, number>;
+}
+
+interface MemberPermissions {
+  can_edit_band?: boolean;
+  can_manage_members?: boolean;
+  can_manage_tours?: boolean;
+  can_view_financials?: boolean;
+  can_upload_media?: boolean;
+  [key: string]: boolean | undefined;
+}
 
 /**
  * Band API Service
@@ -96,7 +114,7 @@ class BandService {
   async getBandSubscription(bandId: string): Promise<{
     success: boolean;
     bandId: string;
-    subscription: any;
+    subscription: SubscriptionResponse;
   }> {
     return await apiService.get(`/bands/${bandId}/subscription`);
   }
@@ -106,7 +124,7 @@ class BandService {
    */
   async getMySubscription(): Promise<{
     success: boolean;
-    subscription: any;
+    subscription: SubscriptionResponse;
   }> {
     return await apiService.get('/bands/my/subscription');
   }
@@ -130,7 +148,7 @@ class BandService {
     data: {
       user_id: string;
       role?: string;
-      permissions?: any;
+      permissions?: MemberPermissions;
     }
   ): Promise<BandMember> {
     return await apiService.post(`/band-members/${bandId}`, data);
@@ -145,7 +163,7 @@ class BandService {
     data: {
       role?: string;
       status?: string;
-      permissions?: any;
+      permissions?: MemberPermissions;
     }
   ): Promise<BandMember> {
     return await apiService.put(`/band-members/${bandId}/${memberId}`, data);

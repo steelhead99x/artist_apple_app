@@ -15,7 +15,14 @@ import apiService from '../services/api';
 
 type Step = 'request' | 'verify' | 'reset';
 
-export default function ForgotPasswordScreen({ navigation }: any) {
+interface ForgotPasswordScreenProps {
+  navigation: {
+    goBack: () => void;
+    navigate: (screen: string) => void;
+  };
+}
+
+export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScreenProps) {
   const [step, setStep] = useState<Step>('request');
   const [email, setEmail] = useState('');
   const [pinCode, setPinCode] = useState('');
@@ -45,8 +52,9 @@ export default function ForgotPasswordScreen({ navigation }: any) {
         'PIN Sent',
         'A PIN code has been sent to your email. Please check your inbox and enter the code below.'
       );
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to send PIN code. Please try again.');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send PIN code. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -63,8 +71,9 @@ export default function ForgotPasswordScreen({ navigation }: any) {
       await apiService.verifyPasswordResetPin(email.trim().toLowerCase(), pinCode.trim());
       setStep('reset');
       Alert.alert('PIN Verified', 'Please enter your new password.');
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Invalid or expired PIN code. Please try again.');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Invalid or expired PIN code. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -116,8 +125,9 @@ export default function ForgotPasswordScreen({ navigation }: any) {
           },
         ]
       );
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to reset password. Please try again.');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to reset password. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }

@@ -20,7 +20,13 @@ import {
 } from '../components/common';
 import { VenueDashboardData, TourDate, Venue, PremiumContent } from '../types';
 
-export default function VenueDashboardScreen({ navigation }: any) {
+interface VenueDashboardScreenProps {
+  navigation: {
+    navigate: (screen: string, params?: Record<string, unknown>) => void;
+  };
+}
+
+export default function VenueDashboardScreen({ navigation }: VenueDashboardScreenProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -36,9 +42,8 @@ export default function VenueDashboardScreen({ navigation }: any) {
       setError(null);
       const data = await venueService.getVenueDashboard();
       setDashboardData(data);
-    } catch (err: any) {
-      console.error('Load venue dashboard error:', err);
-      setError(err.message || 'Failed to load venue dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load venue dashboard');
     } finally {
       setLoading(false);
       setRefreshing(false);

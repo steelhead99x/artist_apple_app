@@ -27,7 +27,7 @@
     "tweetnacl": "^1.0.3",
     "tweetnacl-util": "^0.15.1",
     "@livekit/react-native": "^2.5.0",
-    "@livekit/react-native-webrtc": "^125.0.3",
+    "@livekit/react-native-webrtc": "^137.0.2",
     "livekit-client": "^2.5.0",
     "@react-navigation/native": "^6.1.9",
     "@react-navigation/native-stack": "^6.9.17",

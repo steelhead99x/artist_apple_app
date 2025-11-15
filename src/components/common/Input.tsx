@@ -19,6 +19,7 @@ interface InputProps extends TextInputProps {
   containerStyle?: ViewStyle;
   required?: boolean;
   secureTextEntry?: boolean;
+  rightIcon?: React.ReactNode;
 }
 
 export function Input({
@@ -30,6 +31,7 @@ export function Input({
   containerStyle,
   required = false,
   secureTextEntry,
+  rightIcon,
   ...textInputProps
 }: InputProps) {
   const [isFocused, setIsFocused] = useState(false);
@@ -68,7 +70,7 @@ export function Input({
           style={[
             styles.input,
             icon && iconPosition === 'left' && styles.inputWithLeftIcon,
-            (icon && iconPosition === 'right') || secureTextEntry
+            (icon && iconPosition === 'right') || secureTextEntry || rightIcon
               ? styles.inputWithRightIcon
               : {},
           ]}
@@ -79,7 +81,9 @@ export function Input({
           {...textInputProps}
         />
 
-        {secureTextEntry && (
+        {rightIcon ? (
+          <View style={styles.iconRight}>{rightIcon}</View>
+        ) : secureTextEntry ? (
           <TouchableOpacity
             onPress={togglePasswordVisibility}
             style={styles.iconRight}
@@ -91,16 +95,14 @@ export function Input({
               color={isFocused ? '#6366f1' : '#94a3b8'}
             />
           </TouchableOpacity>
-        )}
-
-        {icon && iconPosition === 'right' && !secureTextEntry && (
+        ) : icon && iconPosition === 'right' ? (
           <Ionicons
             name={icon}
             size={20}
             color={error ? '#ef4444' : isFocused ? '#6366f1' : '#94a3b8'}
             style={styles.iconRight}
           />
-        )}
+        ) : null}
       </View>
 
       {error && (

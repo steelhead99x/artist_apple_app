@@ -8,22 +8,83 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../services/AuthContext';
 import { Button, Input } from '../components/common';
+import apiService from '../services/api';
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [pinCode, setPinCode] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [usePinLogin, setUsePinLogin] = useState(true); // PIN is default
+  const [pinRequested, setPinRequested] = useState(false);
+  const [isRequestingPin, setIsRequestingPin] = useState(false);
   const { login, authenticateWithBiometric, biometricAvailable, biometricEnabled, error, clearError } = useAuth();
 
-  const handleLogin = async () => {
-    // Clear any previous errors
+  const handleRequestPin = async () => {
     clearError();
 
-    // Validation
+    if (!email.trim()) {
+      Alert.alert('Email Required', 'Please enter your email address.');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+
+    try {
+      setIsRequestingPin(true);
+      await apiService.requestLoginPin(email.trim().toLowerCase());
+      setPinRequested(true);
+      Alert.alert(
+        'PIN Sent',
+        'A 9-digit PIN code has been sent to your email. Please check your inbox and enter the code below. The PIN will expire in 15 minutes.'
+      );
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to send PIN code. Please try again.');
+    } finally {
+      setIsRequestingPin(false);
+    }
+  };
+
+  const handlePinLogin = async () => {
+    clearError();
+
+    if (!email.trim()) {
+      Alert.alert('Email Required', 'Please enter your email address.');
+      return;
+    }
+
+    if (!pinCode.trim()) {
+      Alert.alert('PIN Required', 'Please enter the 9-digit PIN code sent to your email.');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+
+    try {
+      await apiService.loginWithPin(email.trim().toLowerCase(), pinCode.trim());
+      // Navigation is handled by the auth state change
+    } catch (err: any) {
+      Alert.alert('Login Failed', err.message || 'Invalid or expired PIN code. Please try again.');
+      console.error('PIN login error:', err);
+    }
+  };
+
+  const handlePasswordLogin = async () => {
+    clearError();
+
     if (!email.trim()) {
       Alert.alert('Email Required', 'Please enter your email address.');
       return;
@@ -34,7 +95,6 @@ export default function LoginScreen({ navigation }: any) {
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       Alert.alert('Invalid Email', 'Please enter a valid email address.');
@@ -45,7 +105,6 @@ export default function LoginScreen({ navigation }: any) {
       await login({ email: email.trim().toLowerCase(), password }, rememberMe);
       // Navigation is handled by the auth state change
     } catch (err) {
-      // Error is displayed via the AuthContext
       console.error('Login error:', err);
     }
   };
@@ -91,13 +150,44 @@ export default function LoginScreen({ navigation }: any) {
             <Text style={styles.subtitle}>Connect. Create. Collaborate.</Text>
           </View>
 
+          {/* Login Method Toggle */}
+          <View style={styles.toggleContainer}>
+            <Text style={styles.toggleLabel}>
+              {usePinLogin ? 'Login with PIN' : 'Login with Password'}
+            </Text>
+            <View style={styles.toggleRow}>
+              <Text style={[styles.toggleText, !usePinLogin && styles.toggleTextActive]}>
+                Password
+              </Text>
+              <Switch
+                value={usePinLogin}
+                onValueChange={(value) => {
+                  setUsePinLogin(value);
+                  setPinRequested(false);
+                  setPinCode('');
+                  setPassword('');
+                  clearError();
+                }}
+                trackColor={{ false: '#cbd5e1', true: '#a5b4fc' }}
+                thumbColor={usePinLogin ? '#6366f1' : '#f1f5f9'}
+                ios_backgroundColor="#cbd5e1"
+              />
+              <Text style={[styles.toggleText, usePinLogin && styles.toggleTextActive]}>
+                PIN
+              </Text>
+            </View>
+          </View>
+
           {/* Login Form */}
           <View style={styles.form}>
             <Input
               label="Email"
               placeholder="your@email.com"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                setPinRequested(false);
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -105,41 +195,102 @@ export default function LoginScreen({ navigation }: any) {
               error={error?.toLowerCase().includes('email') ? error : undefined}
             />
 
-            <Input
-              label="Password"
-              placeholder="Enter your password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              icon="lock-closed-outline"
-              error={error?.toLowerCase().includes('password') ? error : undefined}
-            />
+            {usePinLogin ? (
+              <>
+                {!pinRequested ? (
+                  <Button
+                    title="Send PIN to Email"
+                    onPress={handleRequestPin}
+                    variant="primary"
+                    size="large"
+                    fullWidth
+                    icon="mail-outline"
+                    style={styles.requestPinButton}
+                    disabled={isRequestingPin}
+                  />
+                ) : (
+                  <>
+                    <Input
+                      label="PIN Code"
+                      placeholder="Enter 9-digit PIN"
+                      value={pinCode}
+                      onChangeText={setPinCode}
+                      keyboardType="number-pad"
+                      autoCapitalize="none"
+                      maxLength={9}
+                      icon="key-outline"
+                      error={error?.toLowerCase().includes('pin') ? error : undefined}
+                    />
 
-            {/* Remember Me */}
-            <TouchableOpacity
-              style={styles.checkboxContainer}
-              onPress={() => setRememberMe(!rememberMe)}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={rememberMe ? 'checkbox' : 'square-outline'}
-                size={24}
-                color={rememberMe ? '#6366f1' : '#94a3b8'}
-              />
-              <Text style={styles.checkboxLabel}>Remember me (for biometric login)</Text>
-            </TouchableOpacity>
+                    <Button
+                      title="Log In with PIN"
+                      onPress={handlePinLogin}
+                      variant="primary"
+                      size="large"
+                      fullWidth
+                      icon="log-in-outline"
+                      style={styles.loginButton}
+                    />
 
-            {/* Login Button */}
-            <Button
-              title="Log In"
-              onPress={handleLogin}
-              variant="primary"
-              size="large"
-              fullWidth
-              icon="log-in-outline"
-              style={styles.loginButton}
-            />
+                    <TouchableOpacity
+                      style={styles.linkButton}
+                      onPress={() => {
+                        setPinRequested(false);
+                        setPinCode('');
+                      }}
+                    >
+                      <Text style={styles.linkText}>Request a new PIN</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <Input
+                  label="Password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  icon="lock-closed-outline"
+                  error={error?.toLowerCase().includes('password') ? error : undefined}
+                />
+
+                {/* Remember Me */}
+                <TouchableOpacity
+                  style={styles.checkboxContainer}
+                  onPress={() => setRememberMe(!rememberMe)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name={rememberMe ? 'checkbox' : 'square-outline'}
+                    size={24}
+                    color={rememberMe ? '#6366f1' : '#94a3b8'}
+                  />
+                  <Text style={styles.checkboxLabel}>Remember me (for biometric login)</Text>
+                </TouchableOpacity>
+
+                {/* Login Button */}
+                <Button
+                  title="Log In"
+                  onPress={handlePasswordLogin}
+                  variant="primary"
+                  size="large"
+                  fullWidth
+                  icon="log-in-outline"
+                  style={styles.loginButton}
+                />
+
+                {/* Forgot Password */}
+                <TouchableOpacity
+                  style={styles.linkButton}
+                  onPress={handleForgotPassword}
+                >
+                  <Text style={styles.linkText}>Forgot your password?</Text>
+                </TouchableOpacity>
+              </>
+            )}
 
             {/* Biometric Login */}
             {biometricAvailable && biometricEnabled && (
@@ -153,14 +304,6 @@ export default function LoginScreen({ navigation }: any) {
                 style={styles.biometricButton}
               />
             )}
-
-            {/* Forgot Password */}
-            <TouchableOpacity
-              style={styles.linkButton}
-              onPress={handleForgotPassword}
-            >
-              <Text style={styles.linkText}>Forgot your password?</Text>
-            </TouchableOpacity>
           </View>
 
           {/* Divider */}
@@ -211,7 +354,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 32,
   },
   logoContainer: {
     width: 96,
@@ -233,6 +376,30 @@ const styles = StyleSheet.create({
     color: '#64748b',
     textAlign: 'center',
   },
+  toggleContainer: {
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  toggleLabel: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1e293b',
+    marginBottom: 12,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  toggleText: {
+    fontSize: 14,
+    color: '#94a3b8',
+    fontWeight: '500',
+  },
+  toggleTextActive: {
+    color: '#6366f1',
+    fontWeight: '600',
+  },
   form: {
     marginBottom: 24,
   },
@@ -246,11 +413,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748b',
   },
+  requestPinButton: {
+    marginTop: 8,
+  },
   loginButton: {
     marginBottom: 12,
   },
   biometricButton: {
-    marginBottom: 16,
+    marginTop: 8,
   },
   linkButton: {
     padding: 12,

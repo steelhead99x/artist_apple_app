@@ -94,6 +94,26 @@ class ApiService {
     return response.data;
   }
 
+  async requestLoginPin(email: string): Promise<ApiResponse> {
+    const response = await this.client.post('/auth/request-login-pin', { email });
+    return response.data;
+  }
+
+  async loginWithPin(email: string, pinCode: string): Promise<AuthResponse> {
+    const response = await this.client.post('/auth/login', {
+      email: email.trim().toLowerCase(),
+      pinCode
+    });
+
+    if (response.data.token) {
+      await SecureStore.setItemAsync('authToken', response.data.token);
+      // Store user data for offline access
+      await SecureStore.setItemAsync('userData', JSON.stringify(response.data.user));
+    }
+
+    return response.data;
+  }
+
   async register(data: RegisterData): Promise<AuthResponse> {
     const response = await this.client.post('/auth/register', data);
 

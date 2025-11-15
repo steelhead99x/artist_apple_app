@@ -1,419 +1,358 @@
 # Artist Space Mobile App
 
-**Version:** 1.0.0
-**Platform:** React Native + Expo
-**Last Updated:** 2025-11-15
+> A modern, feature-rich React Native mobile application for musicians, bands, studios, and venues to connect, collaborate, and manage bookings.
 
-A professional, enterprise-secure mobile application for artists, musicians, and bands. Features end-to-end encrypted messaging, real-time video calls, payment processing, and beautiful UI/UX designed specifically for the music industry.
+[![React Native](https://img.shields.io/badge/React%20Native-0.81-blue.svg)](https://reactnative.dev/)
+[![Expo](https://img.shields.io/badge/Expo-54.0-000020.svg)](https://expo.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
 
----
+## 📱 Overview
 
-## 📚 Documentation Hub
+Artist Space is a comprehensive mobile platform that brings together the music community:
 
-**This README serves as the central navigation for all documentation.**
+- **Artists & Bands**: Manage profiles, tours, bookings, and connect with venues
+- **Recording Studios**: Showcase equipment, manage sessions, connect via LiveKit
+- **Venues**: List events, manage bookings, handle payments
+- **Booking Agents**: Manage multiple artists, track commissions
+- **Managers**: Oversee artist careers and business operations
 
-### 🚀 Quick Start (5 minutes)
-- [Installation & Setup](./docs/QUICK_START.md)
-- [Developer Onboarding](./docs/DEVELOPER_ONBOARDING.md)
-- [Environment Configuration](./docs/ENVIRONMENT_SETUP.md)
+### 🌟 Key Features
 
-### 🏗️ Development
-- [Project Structure](./docs/PROJECT_STRUCTURE.md)
-- [Architecture Overview](./docs/ARCHITECTURE.md)
-- [State Management](./docs/STATE_MANAGEMENT.md)
-- [API Documentation](./docs/API.md)
-- [Component Library](./docs/COMPONENTS.md)
+- ✅ **Multi-Role Support** - 6 different user types with role-specific dashboards
+- ✅ **End-to-End Encryption** - Secure messaging using TweetNaCl
+- ✅ **Real-Time Communication** - LiveKit integration for video/audio/chat
+- ✅ **Band Management** - Create, join, manage band members and media
+- ✅ **Tour Booking** - Book venues, track payments, manage dates
+- ✅ **Studio Sessions** - Remote recording with SonoBus/WebRTC/LiveKit
+- ✅ **Payment Processing** - Stripe, PayPal, crypto wallet support
+- ✅ **Subscription Management** - Tiered plans with feature gating
+- ✅ **Secure Authentication** - JWT + biometric + PIN login
 
-### 🎨 UI/UX
-- [UI Improvements Guide](./UI_IMPROVEMENTS.md) - Complete design system
-- [Quick UI Guide](./QUICK_UI_GUIDE.md) - Component usage examples
-- [Theme System](./docs/STYLING.md) - Colors, typography, spacing
+## 🚀 Quick Start
 
-### 🔒 Security
-- [Security Implementation Guide](./SECURITY_IMPLEMENTATION_GUIDE.md) - **START HERE**
-- [Security Analysis](./SECURITY_ANALYSIS.md) - Audit results
-- [Security Quick Reference](./SECURITY_QUICK_REFERENCE.md) - Quick lookup
+### Prerequisites
 
-### 🎥 Features
-- [Authentication](./docs/features/AUTHENTICATION.md) - 4 auth methods
-- [E2EE Messaging](./docs/features/E2EE_MESSAGING.md) - TweetNaCl encryption
-- [LiveKit Integration](./LIVEKIT_INTEGRATION.md) - Real-time video/audio
-- [Payment Processing](./docs/features/PAYMENTS.md) - Stripe, PayPal, crypto
-- [File Uploads](./docs/features/FILE_UPLOADS.md) - Media handling
+- Node.js 18+ and npm/yarn
+- Expo CLI (`npm install -g expo-cli`)
+- iOS Simulator (Mac) or Android Studio (for emulators)
+- Backend API running (see `examples/backend/`)
 
-### 🚀 Deployment
-- [Deployment Guide](./DEPLOYMENT_GUIDE.md) - Production deployment
-- [CI/CD Setup](./docs/CICD.md) - Automated pipelines
-- [Monitoring](./docs/MONITORING.md) - Logging and alerts
+### Installation
 
-### 🤝 Contributing
-- [Contributing Guidelines](./CONTRIBUTING.md) - How to contribute
-- [Code Review Guide](./docs/CODE_REVIEW.md) - Review checklist
-- [Testing Guide](./docs/TESTING.md) - Test strategies
-- [Troubleshooting](./docs/TROUBLESHOOTING.md) - Common issues
-
-### 📋 Reference
-- [Changelog](./CHANGELOG.md) - Version history
-- [API Routes](./docs/api/ROUTES.md) - All endpoints
-- [Database Schema](./docs/api/DATABASE.md) - Database structure
-- [Type Definitions](./docs/api/TYPES.md) - TypeScript types
-
----
-
-## ✨ Key Features
-
-### Enterprise Security
-- 🔐 **End-to-End Encryption** - TweetNaCl + LiveKit E2EE
-- 🔑 **4 Authentication Methods** - Email, PIN, Biometric, Wallet
-- 🛡️ **Rate Limiting** - Protection against attacks
-- 📱 **Biometric Auth** - Face ID, Touch ID, Fingerprint
-- 🔒 **Secure Storage** - Encrypted credential storage
-
-### Real-Time Communications
-- 🎥 **Video Calls** - LiveKit with E2EE on meet.artist-space.com
-- 💬 **Real-Time Chat** - LiveKit on chat.artist-space.com
-- 📞 **Screen Sharing** - Collaborate remotely
-- 🎤 **HD Audio** - Crystal clear voice
-
-### Beautiful UI/UX
-- ✨ **Modern Design** - Glass-morphism and gradients
-- 🎨 **Music-Themed** - Colors and features for artists
-- ⚡ **Fast & Smooth** - 60fps animations
-- 📱 **Intuitive** - Simple, easy to use
-- 🎯 **Quick Actions** - Common tasks one tap away
-
-### Payment & Financial
-- 💳 **Multiple Gateways** - Stripe, PayPal, Braintree
-- ₿ **Crypto Support** - Ethereum payments
-- 📊 **Payment Tracking** - Ledger and history
-- 📄 **W-2 Support** - Tax document handling
-
----
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **React Native** 0.76.5 with **Expo** 52.0
-- **TypeScript** 5.3 for type safety
-- **Expo Router** 4.0 for navigation
-- **LiveKit** 2.5 for real-time communications
-- **TweetNaCl** 1.0.3 for E2EE messaging
-- **Axios** 1.7.7 for API calls
-
-### Backend
-- **Node.js** 18+ with **Express** 4.21
-- **PostgreSQL** 8.11 with connection pooling
-- **LiveKit Server SDK** 2.0 for video/audio
-- **Stripe** 19.1, **PayPal**, **Braintree** for payments
-- **Ethers.js** 6.13 for cryptocurrency
-- **Bcrypt** for password hashing
-
-### Infrastructure
-- **Digital Ocean** - App Platform + PostgreSQL
-- **LiveKit Cloud** - Real-time infrastructure
-- **meet.artist-space.com** - Video meetings
-- **chat.artist-space.com** - Real-time chat
-
----
-
-## ⚡ Quick Start
-
-### 1. Prerequisites
 ```bash
-# Required
-Node.js 18+
-npm or yarn
-Expo CLI
+# Clone the repository
+git clone <repository-url>
+cd artist_apple_app
 
-# Optional (for native builds)
-Xcode (macOS only)
-Android Studio
-```
-
-### 2. Install Dependencies
-```bash
+# Install dependencies
 npm install
-```
 
-### 3. Configure Environment
-```bash
-# Copy example env file
+# Copy environment configuration
 cp .env.example .env
 
-# Edit with your values
-nano .env
-```
+# Edit .env with your configuration
+nano .env  # Set EXPO_PUBLIC_API_BASE_URL
 
-### 4. Start Development
-```bash
+# Start the development server
 npm start
 ```
 
-**Full guide:** [Quick Start Documentation](./docs/QUICK_START.md)
+### Running on Different Platforms
 
----
+```bash
+npm run ios      # iOS Simulator
+npm run android  # Android Emulator
+npm run web      # Web browser
 
-## 📂 Project Structure
+# Start with cache clear
+npm run start:clear
+
+# Run proxy server (for CORS workaround)
+npm run proxy
+
+# Generate native projects (for LiveKit)
+npm run prebuild
+```
+
+## 📖 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Technical architecture, folder structure, patterns |
+| [MAINTENANCE.md](./MAINTENANCE.md) | Ongoing maintenance, troubleshooting, updates |
+| [BUG_FIXES.md](./BUG_FIXES.md) | Recent bug fixes and improvements |
+| [BACKEND_REFERENCE_GUIDE.md](./BACKEND_REFERENCE_GUIDE.md) | Backend API reference |
+| [LIVEKIT_INTEGRATION.md](./LIVEKIT_INTEGRATION.md) | LiveKit setup and usage |
+| [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) | Production deployment |
+| [CONTRIBUTING.md](./CONTRIBUTING.md) | Contribution guidelines |
+| [CORS_FIX_GUIDE.md](./CORS_FIX_GUIDE.md) | CORS troubleshooting |
+
+## 🏗️ Project Structure
 
 ```
 artist_apple_app/
-├── docs/                          # 📚 All documentation
-│   ├── features/                  # Feature-specific guides
-│   ├── api/                       # API reference
-│   ├── ARCHITECTURE.md            # System architecture
-│   ├── COMPONENTS.md              # Component library
-│   └── ...
-├── src/                           # 💻 Source code
-│   ├── components/                # Reusable UI components
-│   │   └── common/                # Common components
-│   ├── screens/                   # App screens
-│   ├── services/                  # Business logic
-│   │   ├── api.ts                 # API client
-│   │   ├── encryption.ts          # E2EE service
-│   │   ├── livekit.ts             # LiveKit service
-│   │   ├── messages.ts            # Messaging service
-│   │   └── AuthContext.tsx        # Authentication
-│   ├── theme/                     # Design system
-│   └── types/                     # TypeScript types
-├── examples/backend/              # 🔧 Backend reference
-│   ├── src/                       # Backend source
-│   ├── schema.sql                 # Database schema
-│   └── migration_*.sql            # Database migrations
-├── .env.example                   # Environment template
-├── SECURITY_IMPLEMENTATION_GUIDE.md  # Complete security guide
-├── LIVEKIT_INTEGRATION.md         # LiveKit documentation
-├── UI_IMPROVEMENTS.md             # Design system docs
-└── README.md                      # This file (documentation hub)
+├── src/
+│   ├── components/        # Reusable UI components
+│   │   └── common/       # Common components (Button, Input, Card, ErrorBoundary)
+│   ├── navigation/       # Navigation configuration
+│   ├── screens/          # Screen components (18 screens)
+│   ├── services/         # API services and business logic
+│   ├── theme/            # Design system (theme, responsive, layout)
+│   └── types/            # TypeScript type definitions
+├── examples/backend/     # Backend reference implementation
+├── assets/              # Images, icons, fonts
+├── docs/archive/        # Archived old documentation
+├── .env                 # Environment variables (not in git)
+└── App.tsx              # Application entry point
 ```
 
-**Detailed structure:** [Project Structure Guide](./docs/PROJECT_STRUCTURE.md)
+## 🎨 Design System
 
----
+### Theme System
 
-## 🔧 Development Workflow
+Centralized design tokens for consistent UI:
 
-### Daily Development
+```typescript
+import theme from './src/theme';
+
+// Colors
+theme.colors.primary[500]      // Main brand color
+theme.colors.text.primary      // Primary text color
+theme.colors.status.booked     // Status-specific colors
+
+// Typography
+theme.typography.sizes.xl       // Font sizes
+theme.typography.fontWeights.bold
+
+// Spacing
+theme.spacing.base             // 16px base unit
+theme.spacing.xl               // 24px
+
+// Shadows & Radius
+theme.shadows.md               // Elevation shadow
+theme.borderRadius.lg          // 16px radius
+```
+
+### Responsive Utilities
+
+Build responsive layouts easily:
+
+```typescript
+import { responsive } from './src/theme/responsive';
+
+// Get responsive values
+const fontSize = responsive.responsiveFontSize(20);
+const padding = responsive.screenPadding();
+
+// Check breakpoints
+if (responsive.isTablet()) {
+  // Tablet-specific layout
+}
+
+// Responsive value selection
+const columns = responsive.responsiveValue({
+  xs: 1,
+  md: 2,
+  lg: 3,
+});
+```
+
+### Layout Helpers
+
+Pre-built layout patterns:
+
+```typescript
+import { layout } from './src/theme/layout';
+
+const styles = StyleSheet.create({
+  container: {
+    ...layout.container.screen,
+    ...layout.spacing.pBase,
+  },
+  title: {
+    ...layout.text.h2,
+  },
+  row: {
+    ...layout.flex.rowBetween,
+  },
+});
+```
+
+## 🔐 Security Features
+
+- **E2EE Messaging**: TweetNaCl (X25519-XSalsa20-Poly1305)
+- **Secure Storage**: Expo SecureStore (native) / localStorage (web)
+- **JWT Authentication**: Secure token-based auth
+- **Biometric Login**: Face ID / Touch ID support
+- **PIN Code Login**: 6-digit PIN for quick access
+- **Error Boundary**: Prevents app crashes from propagating
+- **Rate Limiting**: Backend rate limiting on auth endpoints
+
+## 🔌 API Integration
+
+```typescript
+// Configure in .env
+EXPO_PUBLIC_API_BASE_URL=https://stage-www.artist-space.com/api
+
+// Usage
+import apiService from './src/services/api';
+
+// Get data
+const bands = await apiService.get<Band[]>('/bands');
+const user = await apiService.getCurrentUser();
+
+// Post data
+const newBand = await apiService.post('/bands/create', bandData);
+
+// Error handling
+try {
+  await apiService.login({ email, password });
+} catch (error) {
+  if (error instanceof ApiError) {
+    console.error(error.message, error.status);
+  }
+}
+```
+
+## 📱 Platform Support
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| iOS | ✅ Supported | Requires native build for LiveKit |
+| Android | ✅ Supported | Requires native build for LiveKit |
+| Web | ⚠️ Limited | No LiveKit, localStorage instead of SecureStore |
+
+## 🐛 Troubleshooting
+
+### CORS Errors (Web)
+
 ```bash
-# Start dev server
+# Use the development proxy server
+npm run proxy
+
+# Update .env
+EXPO_PUBLIC_API_BASE_URL=http://localhost:3001/api
+
+# Restart Expo
 npm start
-
-# Run on iOS simulator
-npm run ios
-
-# Run on Android emulator
-npm run android
-
-# Clear cache if issues
-npm start -- --clear
 ```
 
-### Making Changes
-1. Create feature branch: `git checkout -b feature/your-feature`
-2. Make changes
-3. Update documentation
-4. Test thoroughly
-5. Create pull request
-6. Code review
-7. Merge to main
+### LiveKit Not Working
 
-**Full workflow:** [Contributing Guide](./CONTRIBUTING.md)
-
----
-
-## 🧪 Testing
+LiveKit requires a native build:
 
 ```bash
-# Run tests (when configured)
-npm test
+npm run prebuild
+# Then use development builds or EAS
+```
 
-# Type check
+### Build Errors
+
+```bash
+# Clear cache
+npm run start:clear
+npx expo prebuild --clean
+
+# Reinstall dependencies
+rm -rf node_modules
+npm install
+```
+
+### Type Errors
+
+```bash
+# Check TypeScript compilation
 npx tsc --noEmit
 
-# Lint
-npm run lint
-
-# Format
-npm run format
+# Ensure types are installed
+npm install --save-dev @types/react
 ```
 
-**Testing guide:** [Testing Documentation](./docs/TESTING.md)
+See [MAINTENANCE.md](./MAINTENANCE.md) for detailed troubleshooting.
 
----
+## 📦 Dependencies
 
-## 🚀 Building & Deployment
+### Core
+- React 19.1.0 / React Native 0.81.5
+- Expo SDK 54.0.0
+- TypeScript 5.3.0
 
-### Development Build
+### Navigation
+- @react-navigation/native 7.0.14
+- @react-navigation/bottom-tabs 7.2.0
+- @react-navigation/native-stack 7.2.0
+
+### Real-Time & Media
+- @livekit/react-native 2.5.0
+- livekit-client 2.5.0
+- expo-camera 17.0.9
+- expo-image-picker 17.0.8
+
+### Security & Auth
+- axios 1.7.7
+- tweetnacl 1.0.3
+- expo-secure-store 15.0.7
+- expo-local-authentication 17.0.7
+
+See [package.json](./package.json) for complete list.
+
+## 🚢 Deployment
+
 ```bash
-# For testing on physical devices
-eas build --profile development --platform ios
-eas build --profile development --platform android
+# Install EAS CLI
+npm install -g eas-cli
+
+# Login
+eas login
+
+# Build for iOS
+eas build --platform ios --profile production
+
+# Build for Android
+eas build --platform android --profile production
+
+# Submit to stores
+eas submit --platform ios
+eas submit --platform android
 ```
 
-### Production Build
-```bash
-# For App Store / Play Store
-eas build --profile production --platform ios
-eas build --profile production --platform android
-```
+See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions.
 
-### Deploy Backend
-```bash
-cd examples/backend
-npm run build
-npm start
-```
+## 📈 Recent Improvements (2025-11-15)
 
-**Full guide:** [Deployment Documentation](./DEPLOYMENT_GUIDE.md)
+- ✅ Fixed 60+ bugs including critical E2EE messaging issue
+- ✅ Improved TypeScript type safety (eliminated all 'any' types)
+- ✅ Added React Error Boundary to prevent crashes
+- ✅ Fixed memory leaks in multiple components
+- ✅ Enhanced error handling across the app
+- ✅ Added responsive design utilities and layout helpers
+- ✅ Removed unused packages (expo-router, fbjs)
+- ✅ Cleaned up and consolidated documentation
+- ✅ Improved CORS configuration
 
----
-
-## 📖 Documentation Maintenance
-
-### Keeping Docs Updated
-
-**When to update documentation:**
-- ✅ Adding features → Update feature docs
-- ✅ Changing APIs → Update API docs
-- ✅ Modifying UI → Update UI docs
-- ✅ Security changes → Update security docs
-- ✅ Fixing bugs → Update troubleshooting
-
-**Documentation checklist before merging:**
-- [ ] Updated relevant markdown files
-- [ ] Added JSDoc comments to new code
-- [ ] Updated changelog
-- [ ] Checked links still work
-- [ ] Added examples if new feature
-
-### Documentation Structure
-```
-/docs/
-├── QUICK_START.md              # Getting started
-├── DEVELOPER_ONBOARDING.md     # New developer guide
-├── ARCHITECTURE.md             # System design
-├── API.md                      # API reference
-├── COMPONENTS.md               # Component docs
-├── features/                   # Feature guides
-│   ├── AUTHENTICATION.md
-│   ├── E2EE_MESSAGING.md
-│   └── PAYMENTS.md
-└── api/                        # API details
-    ├── ROUTES.md
-    ├── DATABASE.md
-    └── TYPES.md
-```
-
-**More details:** See "Documentation Standards" section below
-
----
-
-## 📊 Current Status
-
-### Version 1.0.0
-
-**Completed:**
-- ✅ Enterprise-grade security (9/10 score)
-- ✅ E2EE messaging (TweetNaCl)
-- ✅ LiveKit integration (3 instances)
-- ✅ Modern UI/UX design system
-- ✅ 4 authentication methods
-- ✅ Payment processing
-- ✅ File upload handling
-- ✅ Comprehensive documentation
-
-**In Progress:**
-- ⚠️ Additional feature documentation
-- ⚠️ CI/CD pipeline setup
-- ⚠️ Automated testing
-
-**Planned:**
-- 📋 Push notifications
-- 📋 Offline mode
-- 📋 Analytics dashboard
-
----
-
-## 🆘 Getting Help
-
-### Documentation
-- 📚 Check this README for links to all docs
-- 🔍 Search in `/docs/` directory
-- 📖 Read inline code comments (JSDoc)
-
-### Support Channels
-- **Issues:** Create GitHub issue
-- **Questions:** Check troubleshooting guide
-- **Security:** See security documentation
-
-### Common Issues
-See [Troubleshooting Guide](./docs/TROUBLESHOOTING.md)
-
----
+See [BUG_FIXES.md](./BUG_FIXES.md) for details.
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see:
-- [Contributing Guidelines](./CONTRIBUTING.md)
-- [Code Review Guide](./docs/CODE_REVIEW.md)
-- [Code of Conduct](./CODE_OF_CONDUCT.md)
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Follow TypeScript strict mode and use the design system
+4. Commit your changes (`git commit -m 'Add amazing feature'`)
+5. Push to the branch (`git push origin feature/amazing-feature`)
+6. Open a Pull Request
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines.
+
+## 📄 License
+
+This project is private and proprietary. All rights reserved.
+
+## 🆘 Support
+
+- **Issues**: Check [MAINTENANCE.md](./MAINTENANCE.md) for troubleshooting
+- **Architecture**: Review [ARCHITECTURE.md](./ARCHITECTURE.md)
+- **API**: See [BACKEND_REFERENCE_GUIDE.md](./BACKEND_REFERENCE_GUIDE.md)
 
 ---
 
-## 📜 License
-
-Private project for artist-space.com
-
----
-
-## 📞 Contacts
-
-**Project Maintainers:**
-- Development Team
-
-**Important Links:**
-- Production: https://www.artist-space.com
-- Staging: https://stage-www.artist-space.com
-- LiveKit Meet: wss://meet.artist-space.com
-- LiveKit Chat: wss://chat.artist-space.com
-
----
-
-## 🎯 Documentation Standards
-
-### File Naming
-- Use `UPPERCASE.md` for top-level guides
-- Use `lowercase.md` for specific features
-- Use descriptive names: `AUTHENTICATION.md` not `auth.md`
-
-### Writing Style
-- **Clear and concise** - No unnecessary jargon
-- **Examples included** - Show, don't just tell
-- **Up-to-date** - Keep current with code
-- **Well-organized** - Use headings and ToC
-- **Cross-linked** - Link to related docs
-
-### Maintenance
-- Review quarterly
-- Update on code changes
-- Mark outdated sections
-- Archive old docs
-
----
-
-## 🔄 Changelog
-
-See [CHANGELOG.md](./CHANGELOG.md) for version history.
-
-**Latest:**
-- `1.0.0` (2025-11-15) - Initial release with full feature set
-
----
-
-**Ready to start?** 🚀
-
-→ New developers: [Developer Onboarding](./docs/DEVELOPER_ONBOARDING.md)
-→ Need security info: [Security Guide](./SECURITY_IMPLEMENTATION_GUIDE.md)
-→ Building features: [Architecture](./docs/ARCHITECTURE.md)
-→ Deploying: [Deployment Guide](./DEPLOYMENT_GUIDE.md)
-
-**Keep documentation updated!** Every change counts. 📝
+**Built with ❤️ for the music community**

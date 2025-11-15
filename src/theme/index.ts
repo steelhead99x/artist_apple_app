@@ -1,6 +1,11 @@
 /**
  * Artist Space Design System
  * Modern, musician-friendly theme optimized for artists and bands
+ *
+ * Exports:
+ * - theme: Core design tokens (colors, typography, spacing, etc.)
+ * - responsive: Responsive design utilities
+ * - layout: Common layout patterns and helpers
  */
 
 import { Platform } from 'react-native';
@@ -136,11 +141,11 @@ export const theme = {
       relaxed: 1.75,
     },
     fontWeights: {
-      normal: '400',
-      medium: '500',
-      semibold: '600',
-      bold: '700',
-      extrabold: '800',
+      normal: '400' as const,
+      medium: '500' as const,
+      semibold: '600' as const,
+      bold: '700' as const,
+      extrabold: '800' as const,
     },
   },
 
@@ -172,7 +177,7 @@ export const theme = {
 
   // Shadows - Soft, elegant elevation
   shadows: {
-    none: Platform.OS === 'web' 
+    none: Platform.OS === 'web'
       ? { boxShadow: 'none' }
       : {
           shadowColor: 'transparent',
@@ -246,5 +251,11 @@ export const getStatusColor = (status: string): string => {
 export const getGradient = (gradientName: keyof typeof theme.gradients) => {
   return theme.gradients[gradientName];
 };
+
+// Export responsive utilities
+export { responsive } from './responsive';
+
+// Export layout helpers
+export { layout } from './layout';
 
 export default theme;

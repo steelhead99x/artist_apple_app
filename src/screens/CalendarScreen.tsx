@@ -20,6 +20,7 @@ import {
   Button,
 } from '../components/common';
 import { TourDate } from '../types';
+import { formatDate, formatLongDate, formatTime } from '../utils/dateFormatters';
 
 type ViewType = 'upcoming' | 'past';
 
@@ -84,31 +85,6 @@ export default function CalendarScreen({ navigation }: CalendarScreenProps) {
 
   const handleAddGig = () => {
     navigation.navigate('CreateTour');
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const formatTime = (timeString: string) => {
-    if (!timeString) return '';
-    // Handle both full datetime strings and time-only strings
-    if (timeString.includes('T') || timeString.includes(':')) {
-      const date = new Date(timeString);
-      if (!isNaN(date.getTime())) {
-        return date.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-        });
-      }
-    }
-    return timeString;
   };
 
   const renderTourCard = (tour: TourDate) => (

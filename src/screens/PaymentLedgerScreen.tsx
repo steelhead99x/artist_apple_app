@@ -17,6 +17,7 @@ import {
   StatusBadge,
 } from '../components/common';
 import { TourPayment } from '../types';
+import { formatDate } from '../utils/dateFormatters';
 
 type FilterType = 'all' | 'pending' | 'paid' | 'failed';
 
@@ -63,15 +64,6 @@ export default function PaymentLedgerScreen({ navigation }: PaymentLedgerScreenP
     if (payment.tour_id) {
       navigation.navigate('TourDetails', { tourId: payment.tour_id });
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
   };
 
   const filteredPayments = payments.filter((payment) => {

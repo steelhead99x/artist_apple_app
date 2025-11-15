@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Conversation } from '../types';
+import { formatRelativeTime } from '../utils/dateFormatters';
 
 // Mock conversations
 const MOCK_CONVERSATIONS: Conversation[] = [
@@ -74,24 +75,6 @@ export default function MessagesScreen() {
     return userData?.name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInMs = now.getTime() - date.getTime();
-    const diffInHours = diffInMs / (1000 * 60 * 60);
-
-    if (diffInHours < 24) {
-      return date.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-      });
-    } else if (diffInHours < 48) {
-      return 'Yesterday';
-    } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }
-  };
-
   const renderConversation = ({ item }: { item: Conversation }) => {
     const otherUserId = item.participants.find((p) => p !== 'user1') || '';
     const userData = MOCK_USER_DATA[otherUserId] || {
@@ -115,7 +98,7 @@ export default function MessagesScreen() {
               {userData.name}
             </Text>
             <Text style={styles.timestamp}>
-              {formatTime(item.lastMessage?.createdAt || item.updatedAt)}
+              {formatRelativeTime(item.lastMessage?.createdAt || item.updatedAt)}
             </Text>
           </View>
 

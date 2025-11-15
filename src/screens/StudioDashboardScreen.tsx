@@ -20,6 +20,7 @@ import {
   Button,
 } from '../components/common';
 import { StudioDashboardData, RecordingSession, RecordingStudio } from '../types';
+import { formatDate, formatTime } from '../utils/dateFormatters';
 
 interface StudioDashboardScreenProps {
   navigation: {
@@ -71,27 +72,6 @@ export default function StudioDashboardScreen({ navigation }: StudioDashboardScr
 
   const handleViewEarnings = () => {
     navigation.navigate('StudioEarnings');
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const formatTime = (timeString: string) => {
-    if (!timeString) return '';
-    const date = new Date(timeString);
-    if (!isNaN(date.getTime())) {
-      return date.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-      });
-    }
-    return timeString;
   };
 
   if (loading && !refreshing) {

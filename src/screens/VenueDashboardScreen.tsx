@@ -19,6 +19,7 @@ import {
   Button,
 } from '../components/common';
 import { VenueDashboardData, TourDate, Venue, PremiumContent } from '../types';
+import { formatDate, formatTime } from '../utils/dateFormatters';
 
 interface VenueDashboardScreenProps {
   navigation: {
@@ -73,27 +74,6 @@ export default function VenueDashboardScreen({ navigation }: VenueDashboardScree
 
   const handleViewEarnings = () => {
     navigation.navigate('VenueEarnings');
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const formatTime = (timeString: string) => {
-    if (!timeString) return '';
-    const date = new Date(timeString);
-    if (!isNaN(date.getTime())) {
-      return date.toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-      });
-    }
-    return timeString;
   };
 
   if (loading && !refreshing) {

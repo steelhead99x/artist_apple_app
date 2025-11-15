@@ -139,8 +139,9 @@ export default function ManageMembersScreen({ route, navigation }: ManageMembers
               await bandService.removeMember(bandId, memberId);
               Alert.alert('Removed', `${userName} has been removed from the band`);
               loadMembers();
-            } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to remove member');
+            } catch (err) {
+              const errorMessage = err instanceof Error ? err.message : 'Failed to remove member';
+              Alert.alert('Error', errorMessage);
             }
           },
         },
@@ -164,8 +165,9 @@ export default function ManageMembersScreen({ route, navigation }: ManageMembers
       );
       setInviteEmail('');
       setShowInviteForm(false);
-    } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to send invitation');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send invitation';
+      Alert.alert('Error', errorMessage);
     } finally {
       setInviting(false);
     }

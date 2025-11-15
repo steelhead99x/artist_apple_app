@@ -81,6 +81,7 @@ npm run prebuild
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | Technical architecture, folder structure, patterns |
 | [MAINTENANCE.md](./MAINTENANCE.md) | Ongoing maintenance, troubleshooting, updates |
 | [BUG_FIXES.md](./BUG_FIXES.md) | Recent bug fixes and improvements |
+| [TESTING.md](./TESTING.md) | Testing guide, best practices, and coverage |
 | [BACKEND_REFERENCE_GUIDE.md](./BACKEND_REFERENCE_GUIDE.md) | Backend API reference |
 | [LIVEKIT_INTEGRATION.md](./LIVEKIT_INTEGRATION.md) | LiveKit setup and usage |
 | [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) | Production deployment |

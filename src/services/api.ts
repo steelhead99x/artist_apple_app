@@ -31,6 +31,11 @@ export class ApiError extends Error {
 
 class ApiService {
   private client: AxiosInstance;
+  private isRefreshing = false;
+  private failedQueue: Array<{
+    resolve: (value?: any) => void;
+    reject: (reason?: any) => void;
+  }> = [];
 
   constructor() {
     this.client = axios.create({
@@ -53,14 +58,62 @@ class ApiService {
       (error) => Promise.reject(error)
     );
 
-    // Handle responses and errors
+    // Handle responses and errors with automatic token refresh
     this.client.interceptors.response.use(
       (response) => response,
       async (error: AxiosError) => {
-        if (error.response?.status === 401) {
-          // Clear token on unauthorized
-          await SecureStore.deleteItemAsync('authToken');
-          // You might want to trigger logout in your app here
+        const originalRequest: any = error.config;
+
+        // If 401 and we haven't tried to refresh yet
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          if (this.isRefreshing) {
+            // Wait for the current refresh to complete
+            return new Promise((resolve, reject) => {
+              this.failedQueue.push({ resolve, reject });
+            })
+              .then(() => this.client.request(originalRequest))
+              .catch((err) => Promise.reject(err));
+          }
+
+          originalRequest._retry = true;
+          this.isRefreshing = true;
+
+          try {
+            const refreshToken = await SecureStore.getItemAsync('refreshToken');
+            if (refreshToken) {
+              // Try to refresh the token
+              const response = await this.client.post('/auth/refresh', { refreshToken });
+
+              if (response.data.token) {
+                await SecureStore.setItemAsync('authToken', response.data.token);
+                if (response.data.refreshToken) {
+                  await SecureStore.setItemAsync('refreshToken', response.data.refreshToken);
+                }
+
+                // Update Authorization header
+                originalRequest.headers.Authorization = `Bearer ${response.data.token}`;
+
+                // Process queued requests
+                this.failedQueue.forEach(({ resolve }) => resolve());
+                this.failedQueue = [];
+
+                // Retry original request
+                return this.client.request(originalRequest);
+              }
+            }
+          } catch (refreshError) {
+            // Refresh failed, clear all auth data
+            this.failedQueue.forEach(({ reject }) => reject(refreshError));
+            this.failedQueue = [];
+
+            await SecureStore.deleteItemAsync('authToken');
+            await SecureStore.deleteItemAsync('refreshToken');
+            await SecureStore.deleteItemAsync('userData');
+
+            throw refreshError;
+          } finally {
+            this.isRefreshing = false;
+          }
         }
 
         const message =
@@ -91,6 +144,11 @@ class ApiService {
       await SecureStore.setItemAsync('userData', JSON.stringify(response.data.user));
     }
 
+    // Store refresh token if provided
+    if (response.data.refreshToken) {
+      await SecureStore.setItemAsync('refreshToken', response.data.refreshToken);
+    }
+
     return response.data;
   }
 
@@ -100,6 +158,27 @@ class ApiService {
     if (response.data.token) {
       await SecureStore.setItemAsync('authToken', response.data.token);
       await SecureStore.setItemAsync('userData', JSON.stringify(response.data.user));
+    }
+
+    // Store refresh token if provided
+    if (response.data.refreshToken) {
+      await SecureStore.setItemAsync('refreshToken', response.data.refreshToken);
+    }
+
+    return response.data;
+  }
+
+  async refreshAuthToken(refreshToken: string): Promise<AuthResponse> {
+    const response = await this.client.post('/auth/refresh', { refreshToken });
+
+    if (response.data.token) {
+      await SecureStore.setItemAsync('authToken', response.data.token);
+      await SecureStore.setItemAsync('userData', JSON.stringify(response.data.user));
+    }
+
+    // Update refresh token if a new one is provided
+    if (response.data.refreshToken) {
+      await SecureStore.setItemAsync('refreshToken', response.data.refreshToken);
     }
 
     return response.data;
@@ -113,6 +192,7 @@ class ApiService {
     } finally {
       await SecureStore.deleteItemAsync('authToken');
       await SecureStore.deleteItemAsync('userData');
+      await SecureStore.deleteItemAsync('refreshToken');
     }
   }
 
@@ -206,8 +286,15 @@ class ApiService {
   }
 
   async getStoredUser(): Promise<any | null> {
-    const userJson = await SecureStore.getItemAsync('userData');
-    return userJson ? JSON.parse(userJson) : null;
+    try {
+      const userJson = await SecureStore.getItemAsync('userData');
+      return userJson ? JSON.parse(userJson) : null;
+    } catch (error) {
+      // If JSON parsing fails, clear corrupted data
+      if (__DEV__) console.error('Failed to parse stored user data:', error);
+      await SecureStore.deleteItemAsync('userData');
+      return null;
+    }
   }
 }
 

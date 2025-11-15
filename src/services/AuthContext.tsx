@@ -27,7 +27,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const BIOMETRIC_KEY = 'biometricEnabled';
-const CREDENTIALS_KEY = 'savedCredentials';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -68,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error) {
-      console.error('Auth initialization failed:', error);
+      if (__DEV__) console.error('Auth initialization failed:', error);
     } finally {
       setIsLoading(false);
     }
@@ -88,20 +87,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Initialize E2EE encryption keys
       try {
         await messageService.initializeE2EE();
-        console.log('✅ E2EE initialized successfully');
+        if (__DEV__) console.log('✅ E2EE initialized successfully');
       } catch (e2eeError) {
-        console.error('⚠️ E2EE initialization failed (non-critical):', e2eeError);
+        if (__DEV__) console.error('⚠️ E2EE initialization failed (non-critical):', e2eeError);
         // Don't fail login if E2EE initialization fails
       }
 
-      // Save credentials if remember me is checked (for biometric login)
-      // SECURITY NOTE: This stores credentials encrypted in SecureStore
-      // Consider using refresh tokens instead for better security
-      if (rememberMe) {
-        await SecureStore.setItemAsync(
-          CREDENTIALS_KEY,
-          JSON.stringify(credentials)
-        );
+      // SECURITY: Enable biometric for future logins using refresh token
+      // We store the refresh token instead of credentials for better security
+      if (rememberMe && response.refreshToken) {
+        await SecureStore.setItemAsync(BIOMETRIC_KEY, 'true');
+        await SecureStore.setItemAsync('refreshToken', response.refreshToken);
       }
     } catch (err) {
       const errorMessage = err instanceof ApiError ? err.message : 'Login failed. Please try again.';
@@ -125,12 +121,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await encryptionService.clearKeys();
       messageService.clearPublicKeyCache();
 
-      // Optionally clear biometric settings
-      // Note: We don't clear biometric settings so user can re-login with biometric
-      // await SecureStore.deleteItemAsync(BIOMETRIC_KEY);
-      // await SecureStore.deleteItemAsync(CREDENTIALS_KEY);
+      // Clear refresh token but keep biometric setting so user can re-login with biometric
+      await SecureStore.deleteItemAsync('refreshToken');
     } catch (error) {
-      console.error('Logout error:', error);
+      if (__DEV__) console.error('Logout error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -153,9 +147,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Initialize E2EE encryption keys for new user
         try {
           await messageService.initializeE2EE();
-          console.log('✅ E2EE initialized for new user');
+          if (__DEV__) console.log('✅ E2EE initialized for new user');
         } catch (e2eeError) {
-          console.error('⚠️ E2EE initialization failed (non-critical):', e2eeError);
+          if (__DEV__) console.error('⚠️ E2EE initialization failed (non-critical):', e2eeError);
         }
       }
     } catch (err) {
@@ -175,7 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userData = await apiService.getCurrentUser();
       setUser(userData);
     } catch (error) {
-      console.error('Failed to refresh user:', error);
+      if (__DEV__) console.error('Failed to refresh user:', error);
       // If refresh fails, user might need to re-login
       if (error instanceof ApiError && error.status === 401) {
         setUser(null);
@@ -216,7 +210,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         Alert.alert('Success', 'Biometric authentication enabled!');
       }
     } catch (error) {
-      console.error('Enable biometric error:', error);
+      if (__DEV__) console.error('Enable biometric error:', error);
       Alert.alert('Error', 'Failed to enable biometric authentication.');
     }
   };
@@ -227,11 +221,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const disableBiometric = async () => {
     try {
       await SecureStore.deleteItemAsync(BIOMETRIC_KEY);
-      await SecureStore.deleteItemAsync(CREDENTIALS_KEY);
+      await SecureStore.deleteItemAsync('refreshToken');
       setBiometricEnabled(false);
       Alert.alert('Success', 'Biometric authentication disabled.');
     } catch (error) {
-      console.error('Disable biometric error:', error);
+      if (__DEV__) console.error('Disable biometric error:', error);
     }
   };
 
@@ -251,18 +245,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (result.success) {
-        // Get saved credentials
-        const credentialsJson = await SecureStore.getItemAsync(CREDENTIALS_KEY);
-        if (credentialsJson) {
-          const credentials: LoginCredentials = JSON.parse(credentialsJson);
-          await login(credentials);
-          return true;
+        // SECURITY: Use refresh token instead of stored credentials
+        const refreshToken = await SecureStore.getItemAsync('refreshToken');
+        if (refreshToken) {
+          try {
+            const response = await apiService.refreshAuthToken(refreshToken);
+            setUser(response.user);
+
+            // Initialize E2EE for biometric login
+            try {
+              await messageService.initializeE2EE();
+            } catch (e2eeError) {
+              if (__DEV__) console.error('E2EE initialization failed:', e2eeError);
+            }
+
+            return true;
+          } catch (refreshError) {
+            // Refresh token expired or invalid, clear it
+            await SecureStore.deleteItemAsync('refreshToken');
+            await SecureStore.deleteItemAsync(BIOMETRIC_KEY);
+            setBiometricEnabled(false);
+            return false;
+          }
         }
       }
 
       return false;
     } catch (error) {
-      console.error('Biometric authentication error:', error);
+      if (__DEV__) console.error('Biometric authentication error:', error);
       return false;
     }
   };

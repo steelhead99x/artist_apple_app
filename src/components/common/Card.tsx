@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, StyleSheet, ViewStyle, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -12,7 +12,28 @@ interface CardProps {
   style?: ViewStyle;
 }
 
-export function Card({
+/**
+ * Card Component
+ *
+ * A reusable card component with optional title, subtitle, icon, and variants.
+ * Supports both pressable and non-pressable modes.
+ *
+ * @param children - Content to display inside the card
+ * @param title - Optional card title
+ * @param subtitle - Optional card subtitle
+ * @param icon - Optional Ionicons icon name
+ * @param onPress - Optional press handler (makes card touchable)
+ * @param variant - Card style variant: 'default', 'elevated', or 'outlined'
+ * @param style - Additional custom styles
+ *
+ * @example
+ * ```tsx
+ * <Card title="Band Name" subtitle="Rock Band" icon="musical-notes" onPress={handlePress}>
+ *   <Text>Card content</Text>
+ * </Card>
+ * ```
+ */
+const CardComponent = ({
   children,
   title,
   subtitle,
@@ -52,6 +73,9 @@ export function Card({
       style={[styles.card, variantStyles[variant], style]}
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
+      accessible={!!onPress}
+      accessibilityRole={onPress ? 'button' : 'none'}
+      accessibilityLabel={title || 'Card'}
     >
       {(title || subtitle || icon) && (
         <View style={styles.header}>
@@ -70,6 +94,9 @@ export function Card({
     </CardContainer>
   );
 }
+
+// Memoize component to prevent unnecessary re-renders
+export const Card = memo(CardComponent);
 
 const styles = StyleSheet.create({
   card: {

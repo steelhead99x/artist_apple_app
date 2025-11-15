@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -22,9 +22,40 @@ interface ButtonProps {
   fullWidth?: boolean;
   style?: ViewStyle;
   textStyle?: TextStyle;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 }
 
-export function Button({
+/**
+ * Button Component
+ *
+ * A highly customizable button component with multiple variants, sizes, and states.
+ * Supports loading state, icons, and accessibility features.
+ *
+ * @param title - Button text
+ * @param onPress - Press handler function
+ * @param variant - Button style variant
+ * @param size - Button size
+ * @param loading - Show loading indicator
+ * @param disabled - Disable button
+ * @param icon - Optional icon name
+ * @param iconPosition - Icon position (left or right)
+ * @param fullWidth - Make button full width
+ * @param accessibilityLabel - Custom accessibility label
+ * @param accessibilityHint - Accessibility hint for screen readers
+ *
+ * @example
+ * ```tsx
+ * <Button
+ *   title="Save Changes"
+ *   onPress={handleSave}
+ *   variant="primary"
+ *   icon="checkmark"
+ *   loading={isSaving}
+ * />
+ * ```
+ */
+const ButtonComponent = ({
   title,
   onPress,
   variant = 'primary',
@@ -36,6 +67,8 @@ export function Button({
   fullWidth = false,
   style,
   textStyle,
+  accessibilityLabel,
+  accessibilityHint,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
 
@@ -102,6 +135,11 @@ export function Button({
       onPress={onPress}
       disabled={isDisabled}
       activeOpacity={0.7}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel || title}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
     >
       {loading ? (
         <ActivityIndicator color={textColorStyles[variant].color} />
@@ -138,6 +176,9 @@ export function Button({
     </TouchableOpacity>
   );
 }
+
+// Memoize component to prevent unnecessary re-renders
+export const Button = memo(ButtonComponent);
 
 const styles = StyleSheet.create({
   button: {

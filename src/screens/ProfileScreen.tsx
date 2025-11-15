@@ -112,7 +112,12 @@ export default function ProfileScreen() {
               />
             </View>
           )}
-          <TouchableOpacity style={styles.editAvatarButton}>
+          <TouchableOpacity
+            style={styles.editAvatarButton}
+            accessibilityLabel="Change profile picture"
+            accessibilityRole="button"
+            accessibilityHint="Opens camera or photo library to change your profile picture"
+          >
             <Ionicons name="camera" size={16} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -156,6 +161,9 @@ export default function ProfileScreen() {
             key={item.id}
             style={styles.menuItem}
             onPress={item.action}
+            accessibilityLabel={item.title}
+            accessibilityRole="button"
+            accessibilityHint={item.subtitle}
           >
             <View style={styles.menuIconContainer}>
               <Ionicons name={item.icon as any} size={24} color="#007AFF" />
@@ -170,7 +178,13 @@ export default function ProfileScreen() {
       </View>
 
       {/* Logout Button */}
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={handleLogout}
+        accessibilityLabel="Logout"
+        accessibilityRole="button"
+        accessibilityHint="Sign out of your account"
+      >
         <Ionicons name="log-out-outline" size={20} color="#F44336" />
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>

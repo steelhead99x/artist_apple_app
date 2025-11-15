@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -9,7 +9,24 @@ interface StatusBadgeProps {
   style?: ViewStyle;
 }
 
-export function StatusBadge({ status, type = 'tour', showIcon = true, style }: StatusBadgeProps) {
+/**
+ * StatusBadge Component
+ *
+ * Displays a colored status badge with an icon and label.
+ * Supports multiple types with different status configurations.
+ *
+ * @param status - Status value (e.g., 'pending', 'confirmed', 'paid')
+ * @param type - Badge type: 'tour', 'payment', 'user', 'session', or 'subscription'
+ * @param showIcon - Whether to show the status icon
+ * @param style - Additional custom styles
+ *
+ * @example
+ * ```tsx
+ * <StatusBadge status="confirmed" type="tour" />
+ * <StatusBadge status="paid" type="payment" showIcon={false} />
+ * ```
+ */
+const StatusBadgeComponent = ({ status, type = 'tour', showIcon = true, style }: StatusBadgeProps) => {
   const getStatusConfig = () => {
     const normalizedStatus = status.toLowerCase();
 
@@ -77,7 +94,12 @@ export function StatusBadge({ status, type = 'tour', showIcon = true, style }: S
   const config = getStatusConfig();
 
   return (
-    <View style={[styles.badge, { backgroundColor: config.bg }, style]}>
+    <View
+      style={[styles.badge, { backgroundColor: config.bg }, style]}
+      accessible={true}
+      accessibilityRole="text"
+      accessibilityLabel={`Status: ${config.label}`}
+    >
       {showIcon && (
         <Ionicons name={config.icon} size={14} color={config.color} style={styles.icon} />
       )}
@@ -85,6 +107,9 @@ export function StatusBadge({ status, type = 'tour', showIcon = true, style }: S
     </View>
   );
 }
+
+// Memoize component to prevent unnecessary re-renders
+export const StatusBadge = memo(StatusBadgeComponent);
 
 const styles = StyleSheet.create({
   badge: {

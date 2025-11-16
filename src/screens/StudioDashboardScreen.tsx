@@ -292,7 +292,7 @@ export default function StudioDashboardScreen({ navigation }: StudioDashboardScr
       {/* Recent Sessions */}
       {recentSessions && recentSessions.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🎵 Recent Sessions</Text>
+          <Text style={[styles.sectionTitle, styles.sectionTitleStandalone]}>🎵 Recent Sessions</Text>
 
           {recentSessions.map((session) => (
             <Card
@@ -321,7 +321,7 @@ export default function StudioDashboardScreen({ navigation }: StudioDashboardScr
 
       {/* Quick Actions */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <Text style={[styles.sectionTitle, styles.sectionTitleStandalone]}>Quick Actions</Text>
         <View style={styles.actionsGrid}>
           <TouchableOpacity
             style={styles.actionButton}
@@ -454,6 +454,7 @@ const styles = StyleSheet.create({
   },
   section: {
     padding: 16,
+    marginBottom: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -465,6 +466,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#1e293b',
+    marginBottom: 12,
+  },
+  sectionTitleStandalone: {
     marginBottom: 12,
   },
   seeAll: {
@@ -618,6 +622,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
+    marginTop: 12,
   },
   actionButton: {
     flex: 1,

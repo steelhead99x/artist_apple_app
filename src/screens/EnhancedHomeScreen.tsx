@@ -149,7 +149,7 @@ export default function EnhancedHomeScreen({ navigation }: EnhancedHomeScreenPro
         </View>
 
         {/* Quick Actions */}
-        <View style={[styles.section, styles.contentBlock]}>
+        <View style={[styles.section, styles.contentBlock, styles.sectionSpacious]}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           {Platform.OS === 'web' ? (
             <View style={styles.quickActionsGrid}>
@@ -313,7 +313,7 @@ export default function EnhancedHomeScreen({ navigation }: EnhancedHomeScreenPro
         </View>
 
         {/* Discover Section */}
-        <View style={[styles.section, styles.contentBlock]}>
+        <View style={[styles.section, styles.contentBlock, styles.sectionSpacious]}>
           <Text style={styles.sectionTitle}>Discover</Text>
           <TouchableOpacity
             style={styles.discoverCard}
@@ -421,6 +421,9 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.xl,
     paddingHorizontal: theme.spacing.base,
   },
+  sectionSpacious: {
+    marginBottom: theme.spacing['2xl'],
+  },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -440,11 +443,15 @@ const styles = StyleSheet.create({
   quickActionsScroll: {
     paddingHorizontal: theme.spacing.sm,
     paddingRight: theme.spacing.base,
+    paddingBottom: theme.spacing.sm,
+    marginTop: theme.spacing.md,
   },
   quickActionsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.md,
   },
   quickActionWeb: {
     width: '18%',
@@ -455,6 +462,7 @@ const styles = StyleSheet.create({
   },
   quickActionMobile: {
     marginRight: theme.spacing.base,
+    marginBottom: theme.spacing.sm,
   },
   bandStats: {
     flexDirection: 'row',
@@ -537,6 +545,7 @@ const styles = StyleSheet.create({
   },
   discoverCard: {
     marginHorizontal: 0,
+    marginTop: theme.spacing.md,
     borderRadius: theme.borderRadius.lg,
     overflow: 'hidden',
     ...theme.shadows.md,

@@ -2,7 +2,14 @@
 // USER TYPES
 // ============================================================================
 
-export type UserType = 'user' | 'band' | 'studio' | 'bar' | 'booking_agent' | 'booking_manager';
+export type UserType =
+  | 'user'
+  | 'band'
+  | 'studio'
+  | 'bar'
+  | 'booking_agent'
+  | 'booking_manager'
+  | 'supporter';
 export type UserStatus = 'pending' | 'approved' | 'rejected' | 'deleted';
 export type AgentStatus = 'pending' | 'active' | 'suspended';
 export type SuspensionReason = 'admin_deleted' | 'payment_overdue' | 'user_deleted';
@@ -47,6 +54,119 @@ export interface AuthResponse {
   user: User;
   refreshToken?: string;
   message?: string;
+}
+
+// ============================================================================
+// SUPPORTER & TICKETING TYPES
+// ============================================================================
+
+export type TicketStatus = 'upcoming' | 'checked_in' | 'refunded' | 'cancelled' | 'transferred';
+export type TicketDeliveryMethod = 'nfc' | 'qr' | 'wallet' | 'pdf';
+export type WalletPassPlatform = 'apple_wallet' | 'google_pay';
+
+export interface SupporterPreferences {
+  favorite_genres?: string[];
+  favorite_cities?: string[];
+  preferred_notification_channels?: Array<'push' | 'email' | 'sms'>;
+  presale_alerts_enabled?: boolean;
+  auto_add_to_wallet?: boolean;
+  accessibility_notes?: string;
+}
+
+export interface SupporterProfile {
+  id: string;
+  user_id: string;
+  loyalty_tier?: 'standard' | 'plus' | 'vip';
+  preferences?: SupporterPreferences;
+  default_payment_method_id?: string;
+  favorite_venues?: string[];
+  favorite_artists?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WalletPass {
+  id: string;
+  ticket_id: string;
+  platform: WalletPassPlatform;
+  pass_url: string;
+  serial_number?: string;
+  last_synced_at?: string;
+  status: 'active' | 'revoked' | 'expired';
+}
+
+export interface TicketTransfer {
+  id: string;
+  ticket_id: string;
+  from_supporter_id: string;
+  to_supporter_id?: string;
+  to_email?: string;
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled';
+  initiated_at: string;
+  completed_at?: string;
+}
+
+export interface SupporterTicket {
+  id: string;
+  order_id: string;
+  supporter_id: string;
+  event_id: string;
+  event_name: string;
+  venue_name: string;
+  city?: string;
+  state?: string;
+  event_date: string; // ISO string
+  gate_time?: string;
+  seat_label?: string;
+  section?: string;
+  admission_type?: 'general' | 'reserved' | 'vip' | 'accessible';
+  price_paid: number;
+  currency: string;
+  delivery_method: TicketDeliveryMethod[];
+  qr_code_url?: string;
+  nfc_payload?: string;
+  wallet_passes?: WalletPass[];
+  perks?: string[];
+  status: TicketStatus;
+  transfer?: TicketTransfer;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EventAddOn {
+  id: string;
+  title: string;
+  description?: string;
+  price: number;
+  currency: string;
+  quantity_remaining?: number;
+}
+
+export interface SupporterEvent {
+  id: string;
+  name: string;
+  venue_name: string;
+  venue_address?: string;
+  city?: string;
+  state?: string;
+  start_time: string;
+  end_time?: string;
+  description?: string;
+  genres?: string[];
+  presented_by?: string;
+  ticket_price_min?: number;
+  ticket_price_max?: number;
+  currency?: string;
+  is_presale?: boolean;
+  presale_opens_at?: string;
+  available_ticket_count?: number;
+  add_ons?: EventAddOn[];
+  hero_image_url?: string;
+  wallet_supported?: boolean;
+  nfc_supported?: boolean;
+  created_by?: 'venue' | 'booking_agent';
+  created_by_id?: string;
+  updated_at?: string;
 }
 
 // ============================================================================
@@ -731,6 +851,7 @@ export const USER_TYPE_LABELS: Record<UserType, string> = {
   bar: 'Venue',
   booking_agent: 'Booking Agent',
   booking_manager: 'Booking Manager',
+  supporter: 'Supporter',
 };
 
 export const TOUR_STATUS_LABELS: Record<TourStatus, string> = {

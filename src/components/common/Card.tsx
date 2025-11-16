@@ -1,7 +1,8 @@
-import React, { memo } from 'react';
-import { View, Text, StyleSheet, ViewStyle, TouchableOpacity, Platform } from 'react-native';
+import React, { memo, useMemo } from 'react';
+import { View, Text, StyleSheet, ViewStyle, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import theme from '../../theme';
+import { useAppTheme } from '../../theme/ThemeProvider';
+import { makeStyles } from '../../theme/useThemedStyles';
 
 interface CardProps {
   children: React.ReactNode;
@@ -34,6 +35,41 @@ interface CardProps {
  * </Card>
  * ```
  */
+const useStyles = makeStyles((theme) => ({
+  card: {
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.base,
+    marginBottom: theme.spacing.md,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.mode === 'dark' ? theme.colors.surface.muted : theme.colors.primary[50],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: theme.spacing.sm,
+  },
+  headerText: {
+    flex: 1,
+  },
+  title: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.fontWeights.bold,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.xs,
+  },
+  subtitle: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.text.secondary,
+  },
+}));
+
 const CardComponent = (props: CardProps) => {
   const {
     children,
@@ -45,21 +81,27 @@ const CardComponent = (props: CardProps) => {
     style,
   } = props;
 
-  const variantStyles: Record<string, ViewStyle> = {
-    default: {
-      backgroundColor: theme.colors.background.primary,
-      ...theme.shadows.sm,
-    },
-    elevated: {
-      backgroundColor: theme.colors.background.primary,
-      ...theme.shadows.md,
-    },
-    outlined: {
-      backgroundColor: theme.colors.background.primary,
-      borderWidth: 1,
-      borderColor: theme.colors.gray[200],
-    },
-  };
+  const { theme } = useAppTheme();
+  const styles = useStyles();
+
+  const variantStyles: Record<string, ViewStyle> = useMemo(
+    () => ({
+      default: {
+        backgroundColor: theme.colors.surface.card,
+        ...theme.shadows.sm,
+      },
+      elevated: {
+        backgroundColor: theme.colors.surface.card,
+        ...theme.shadows.md,
+      },
+      outlined: {
+        backgroundColor: theme.colors.surface.card,
+        borderWidth: 1,
+        borderColor: theme.colors.border.subtle,
+      },
+    }),
+    [theme],
+  );
 
   const CardContainer = onPress ? TouchableOpacity : View;
 
@@ -76,7 +118,7 @@ const CardComponent = (props: CardProps) => {
         <View style={styles.header}>
           {icon && (
             <View style={styles.iconContainer}>
-              <Ionicons name={icon} size={24} color="#6366f1" />
+              <Ionicons name={icon} size={24} color={theme.colors.primary[500]} />
             </View>
           )}
           <View style={styles.headerText}>
@@ -92,38 +134,3 @@ const CardComponent = (props: CardProps) => {
 
 // Memoize component to prevent unnecessary re-renders
 export const Card = memo(CardComponent);
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.colors.primary[50],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  headerText: {
-    flex: 1,
-  },
-  title: {
-    fontSize: theme.typography.sizes.lg,
-    fontWeight: theme.typography.fontWeights.bold,
-    color: theme.colors.text.primary,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.text.secondary,
-  },
-});

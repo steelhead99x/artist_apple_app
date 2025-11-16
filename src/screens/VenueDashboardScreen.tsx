@@ -275,7 +275,7 @@ export default function VenueDashboardScreen({ navigation }: VenueDashboardScree
       {/* Past Events */}
       {pastEvents && pastEvents.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🎵 Recent Events</Text>
+          <Text style={[styles.sectionTitle, styles.sectionTitleStandalone]}>🎵 Recent Events</Text>
 
           {pastEvents.slice(0, 3).map((event) => (
             <Card
@@ -303,7 +303,7 @@ export default function VenueDashboardScreen({ navigation }: VenueDashboardScree
 
       {/* Quick Actions */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <Text style={[styles.sectionTitle, styles.sectionTitleStandalone]}>Quick Actions</Text>
         <View style={styles.actionsGrid}>
           <TouchableOpacity
             style={styles.actionButton}
@@ -463,6 +463,7 @@ const styles = StyleSheet.create({
   },
   section: {
     padding: 16,
+    marginBottom: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -474,6 +475,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#1e293b',
+    marginBottom: 12,
+  },
+  sectionTitleStandalone: {
     marginBottom: 12,
   },
   seeAll: {
@@ -613,6 +617,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
+    marginTop: 12,
   },
   actionButton: {
     flex: 1,

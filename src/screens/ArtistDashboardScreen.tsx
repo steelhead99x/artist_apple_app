@@ -243,7 +243,7 @@ export default function ArtistDashboardScreen({ navigation }: ArtistDashboardScr
       {/* Recent Activity */}
       {completedTours.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📅 Recent Gigs</Text>
+        <Text style={[styles.sectionTitle, styles.sectionTitleStandalone]}>📅 Recent Gigs</Text>
 
           {completedTours.map((tour) => (
             <Card
@@ -273,7 +273,7 @@ export default function ArtistDashboardScreen({ navigation }: ArtistDashboardScr
 
       {/* Quick Actions */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <Text style={[styles.sectionTitle, styles.sectionTitleStandalone]}>Quick Actions</Text>
         <View style={styles.actionsGrid}>
           <TouchableOpacity
             style={styles.actionButton}
@@ -312,7 +312,7 @@ export default function ArtistDashboardScreen({ navigation }: ArtistDashboardScr
       {/* Booking Agents */}
       {dashboardData && dashboardData.bookingAgents.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🤝 My Booking Agents</Text>
+          <Text style={[styles.sectionTitle, styles.sectionTitleStandalone]}>🤝 My Booking Agents</Text>
           {dashboardData.bookingAgents.map((agent) => (
             <Card key={agent.id} style={styles.agentCard}>
               <View style={styles.agentRow}>
@@ -388,6 +388,7 @@ const styles = StyleSheet.create({
   },
   section: {
     padding: 16,
+    marginBottom: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -399,6 +400,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#1e293b',
+  },
+  sectionTitleStandalone: {
+    marginBottom: 12,
   },
   seeAll: {
     fontSize: 14,
@@ -527,6 +531,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
+    marginTop: 12,
   },
   actionButton: {
     flex: 1,

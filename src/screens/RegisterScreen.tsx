@@ -21,6 +21,8 @@ interface UserTypeOption {
   description: string;
 }
 
+type SocialProviderKey = 'facebook' | 'google' | 'patreon' | 'custom';
+
 const USER_TYPE_OPTIONS: UserTypeOption[] = [
   {
     type: 'user',
@@ -52,6 +54,44 @@ const USER_TYPE_OPTIONS: UserTypeOption[] = [
     icon: 'briefcase',
     description: 'Professional booking agents',
   },
+  {
+    type: 'supporter',
+    label: 'Supporter',
+    icon: 'ticket-outline',
+    description: 'Fans purchasing tickets & perks',
+  },
+];
+
+const SOCIAL_AUTH_PROVIDERS: Array<{
+  key: SocialProviderKey;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  color: string;
+}> = [
+  {
+    key: 'facebook',
+    label: 'Continue with Facebook',
+    icon: 'logo-facebook',
+    color: '#1877F2',
+  },
+  {
+    key: 'google',
+    label: 'Continue with Google',
+    icon: 'logo-google',
+    color: '#DB4437',
+  },
+  {
+    key: 'patreon',
+    label: 'Continue with Patreon',
+    icon: 'logo-patreon',
+    color: '#FF424D',
+  },
+  {
+    key: 'custom',
+    label: 'Continue with Artist Space ID',
+    icon: 'lock-closed-outline',
+    color: '#6366f1',
+  },
 ];
 
 interface RegisterScreenProps {
@@ -71,6 +111,16 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleSocialAuth = (provider: SocialProviderKey) => {
+    const providerLabel =
+      SOCIAL_AUTH_PROVIDERS.find((item) => item.key === provider)?.label || 'this provider';
+
+    Alert.alert(
+      'Coming Soon',
+      `${providerLabel} will be available shortly for Supporter accounts. Please continue with the secure email sign up above for now.`
+    );
+  };
 
   const validateForm = (): boolean => {
     if (!selectedType) {
@@ -233,6 +283,46 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
           {/* Registration Form */}
           {selectedType && (
             <View style={styles.form}>
+              {selectedType === 'supporter' && (
+                <>
+                  <View style={styles.supporterHighlight}>
+                    <Ionicons name="ticket-outline" size={22} color="#0ea5e9" />
+                    <View style={styles.supporterHighlightContent}>
+                      <Text style={styles.supporterHighlightTitle}>Supporter Passport</Text>
+                      <Text style={styles.supporterHighlightText}>
+                        Buy tickets, unlock presales, and store unique NFC or QR passes with Apple Wallet
+                        and Google Pay sync.
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.socialAuthSection}>
+                    <Text style={styles.socialAuthTitle}>Faster sign-up</Text>
+                    <Text style={styles.socialAuthSubtitle}>
+                      Use a social account or Artist Space ID to get started instantly.
+                    </Text>
+                    {SOCIAL_AUTH_PROVIDERS.map((provider) => (
+                      <TouchableOpacity
+                        key={provider.key}
+                        style={styles.socialButton}
+                        onPress={() => handleSocialAuth(provider.key)}
+                        activeOpacity={0.85}
+                      >
+                        <Ionicons
+                          name={provider.icon}
+                          size={18}
+                          color={provider.color}
+                          style={styles.socialIcon}
+                        />
+                        <Text style={styles.socialButtonLabel}>{provider.label}</Text>
+                        <Ionicons name="chevron-forward" size={16} color="#94a3b8" />
+                      </TouchableOpacity>
+                    ))}
+                    <Text style={styles.socialHelperText}>
+                      Prefer email? Complete the form below and we’ll issue wallet-ready tickets to your inbox.
+                    </Text>
+                  </View>
+                </>
+              )}
               <Input
                 label="Name / Business Name"
                 placeholder="Enter your name"
@@ -463,6 +553,75 @@ const styles = StyleSheet.create({
   },
   form: {
     marginBottom: 24,
+  },
+  supporterHighlight: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#ecfeff',
+    borderWidth: 1,
+    borderColor: '#bae6fd',
+    marginBottom: 16,
+  },
+  supporterHighlightContent: {
+    flex: 1,
+  },
+  supporterHighlightTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#0f172a',
+    marginBottom: 4,
+  },
+  supporterHighlightText: {
+    fontSize: 13,
+    color: '#0f172a',
+    lineHeight: 18,
+  },
+  socialAuthSection: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    marginBottom: 16,
+  },
+  socialAuthTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0f172a',
+  },
+  socialAuthSubtitle: {
+    fontSize: 13,
+    color: '#475569',
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  socialButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 8,
+    backgroundColor: '#f8fafc',
+  },
+  socialIcon: {
+    marginRight: 12,
+  },
+  socialButtonLabel: {
+    flex: 1,
+    fontSize: 14,
+    color: '#0f172a',
+    fontWeight: '600',
+  },
+  socialHelperText: {
+    fontSize: 12,
+    color: '#475569',
+    marginTop: 8,
   },
   passwordRequirements: {
     backgroundColor: '#f1f5f9',

@@ -10,6 +10,8 @@
 
 import { Platform } from 'react-native';
 
+export type ThemeMode = 'light' | 'dark';
+
 // Helper to convert shadow properties to boxShadow for web
 export const createShadow = (offset: { width: number; height: number }, radius: number, opacity: number, color: string = '#000') => {
   if (Platform.OS === 'web') {
@@ -48,7 +50,8 @@ export const createShadow = (offset: { width: number; height: number }, radius: 
   };
 };
 
-export const theme = {
+const baseTheme = {
+  mode: 'light' as ThemeMode,
   // Color Palette - Inspired by music and creativity
   colors: {
     // Primary - Purple/Indigo (Creative, Musical)
@@ -115,6 +118,27 @@ export const theme = {
       secondary: '#f8fafc',
       tertiary: '#f1f5f9',
       dark: '#0f172a',
+      overlay: 'rgba(15, 23, 42, 0.7)',
+    },
+
+    surface: {
+      card: '#ffffff',
+      elevated: '#f8fafc',
+      muted: '#f1f5f9',
+      vibrant: '#eef2ff',
+      glass: 'rgba(255, 255, 255, 0.2)',
+    },
+
+    border: {
+      subtle: '#e2e8f0',
+      default: '#cbd5e1',
+      strong: '#94a3b8',
+      focus: '#6366f1',
+    },
+
+    overlay: {
+      soft: 'rgba(15, 23, 42, 0.35)',
+      strong: 'rgba(15, 23, 42, 0.55)',
     },
 
     // Text
@@ -251,27 +275,99 @@ export const theme = {
   },
 };
 
-// Helper functions for theme usage
-export const getStatusColor = (status: string): string => {
-  const statusMap: { [key: string]: string } = {
-    booked: theme.colors.status.booked,
-    pending: theme.colors.status.pending,
-    confirmed: theme.colors.status.confirmed,
-    cancelled: theme.colors.status.cancelled,
-    rehearsal: theme.colors.status.rehearsal,
-    recording: theme.colors.status.recording,
-    available: theme.colors.status.available,
-    active: theme.colors.success,
-    inactive: theme.colors.gray[400],
-    approved: theme.colors.success,
-    rejected: theme.colors.error,
-  };
+const deepClone = <T>(obj: T): T => JSON.parse(JSON.stringify(obj));
 
-  return statusMap[status.toLowerCase()] || theme.colors.gray[400];
+const mergeDeep = <T extends Record<string, any>>(target: T, source: Partial<T>): T => {
+  const output: Record<string, any> = Array.isArray(target) ? [...target] : { ...target };
+  Object.keys(source).forEach((key) => {
+    const sourceValue = (source as Record<string, any>)[key];
+    const targetValue = (target as Record<string, any>)[key];
+    if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
+      output[key] = mergeDeep(targetValue || {}, sourceValue);
+    } else {
+      output[key] = sourceValue;
+    }
+  });
+  return output as T;
 };
 
-export const getGradient = (gradientName: keyof typeof theme.gradients) => {
-  return theme.gradients[gradientName];
+const darkThemeOverrides = {
+  mode: 'dark' as ThemeMode,
+  colors: {
+    background: {
+      primary: '#0b1120',
+      secondary: '#050c1b',
+      tertiary: '#10182b',
+      dark: '#00040d',
+      overlay: 'rgba(0, 0, 0, 0.7)',
+    },
+    surface: {
+      card: '#111827',
+      elevated: '#0f172a',
+      muted: '#1f2937',
+      vibrant: '#312e81',
+      glass: 'rgba(15, 23, 42, 0.65)',
+    },
+    border: {
+      subtle: '#1f2937',
+      default: '#334155',
+      strong: '#475569',
+      focus: '#818cf8',
+    },
+    overlay: {
+      soft: 'rgba(0, 0, 0, 0.45)',
+      strong: 'rgba(0, 0, 0, 0.75)',
+    },
+    text: {
+      primary: '#f8fafc',
+      secondary: '#cbd5f5',
+      tertiary: '#94a3b8',
+      inverse: '#0b1120',
+      link: '#a5b4fc',
+    },
+    gray: {
+      50: '#111827',
+      100: '#1f2937',
+      200: '#273449',
+      300: '#2f3e58',
+      400: '#4b5563',
+      500: '#9ca3af',
+      600: '#d1d5db',
+      700: '#e5e7eb',
+      800: '#f3f4f6',
+      900: '#f9fafb',
+    },
+  },
+};
+
+export const lightTheme = baseTheme;
+export const darkTheme = mergeDeep(deepClone(baseTheme), darkThemeOverrides);
+
+export type Theme = typeof lightTheme;
+
+export const getTheme = (mode: ThemeMode): Theme => (mode === 'dark' ? darkTheme : lightTheme);
+
+// Helper functions for theme usage
+export const getStatusColor = (status: string, currentTheme: Theme = lightTheme): string => {
+  const statusMap: { [key: string]: string } = {
+    booked: currentTheme.colors.status.booked,
+    pending: currentTheme.colors.status.pending,
+    confirmed: currentTheme.colors.status.confirmed,
+    cancelled: currentTheme.colors.status.cancelled,
+    rehearsal: currentTheme.colors.status.rehearsal,
+    recording: currentTheme.colors.status.recording,
+    available: currentTheme.colors.status.available,
+    active: currentTheme.colors.success,
+    inactive: currentTheme.colors.gray[400],
+    approved: currentTheme.colors.success,
+    rejected: currentTheme.colors.error,
+  };
+
+  return statusMap[status.toLowerCase()] || currentTheme.colors.gray[400];
+};
+
+export const getGradient = (gradientName: keyof typeof lightTheme.gradients) => {
+  return lightTheme.gradients[gradientName];
 };
 
 // Export responsive utilities
@@ -280,4 +376,4 @@ export { responsive } from './responsive';
 // Note: layout is exported separately from './layout' to avoid circular dependencies
 // Import it directly: import { layout } from '../theme/layout'
 
-export default theme;
+export default lightTheme;

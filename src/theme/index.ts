@@ -11,10 +11,32 @@
 import { Platform } from 'react-native';
 
 // Helper to convert shadow properties to boxShadow for web
-const createShadow = (offset: { width: number; height: number }, radius: number, opacity: number, color: string = '#000') => {
+export const createShadow = (offset: { width: number; height: number }, radius: number, opacity: number, color: string = '#000') => {
   if (Platform.OS === 'web') {
+    // Handle transparent color
+    if (color === 'transparent' || opacity === 0) {
+      return {
+        boxShadow: 'none',
+      };
+    }
+    
+    // Extract RGB values from color if it's a hex color
+    let r = 0, g = 0, b = 0;
+    if (color.startsWith('#')) {
+      const hex = color.replace('#', '');
+      // Handle 3-digit hex colors
+      if (hex.length === 3) {
+        r = parseInt(hex[0] + hex[0], 16);
+        g = parseInt(hex[1] + hex[1], 16);
+        b = parseInt(hex[2] + hex[2], 16);
+      } else if (hex.length === 6) {
+        r = parseInt(hex.substring(0, 2), 16);
+        g = parseInt(hex.substring(2, 4), 16);
+        b = parseInt(hex.substring(4, 6), 16);
+      }
+    }
     return {
-      boxShadow: `${offset.width}px ${offset.height}px ${radius}px rgba(0, 0, 0, ${opacity})`,
+      boxShadow: `${offset.width}px ${offset.height}px ${radius}px rgba(${r}, ${g}, ${b}, ${opacity})`,
     };
   }
   return {

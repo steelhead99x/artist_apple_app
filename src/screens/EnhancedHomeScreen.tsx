@@ -7,6 +7,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   Dimensions,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,6 +29,45 @@ export default function EnhancedHomeScreen({ navigation }: EnhancedHomeScreenPro
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [greeting, setGreeting] = useState('');
+
+  const quickActions = [
+    {
+      key: 'create-band',
+      icon: 'add-circle' as const,
+      label: 'Create Band',
+      gradient: theme.gradients.primary,
+      onPress: () => navigation.navigate('CreateBand'),
+    },
+    {
+      key: 'calendar',
+      icon: 'calendar-outline' as const,
+      label: 'View Calendar',
+      gradient: theme.gradients.secondary,
+      onPress: () => navigation.navigate('Calendar'),
+    },
+    {
+      key: 'messages',
+      icon: 'chatbubbles' as const,
+      label: 'Messages',
+      gradient: theme.gradients.purple,
+      badge: 3,
+      onPress: () => navigation.navigate('Messages'),
+    },
+    {
+      key: 'payments',
+      icon: 'cash-outline' as const,
+      label: 'Payments',
+      gradient: theme.gradients.sunset,
+      onPress: () => navigation.navigate('PaymentLedger'),
+    },
+    {
+      key: 'live-session',
+      icon: 'videocam' as const,
+      label: 'Live Session',
+      gradient: theme.gradients.ocean,
+      onPress: () => navigation.navigate('LiveStream'),
+    },
+  ];
 
   useEffect(() => {
     updateGreeting();
@@ -88,7 +128,7 @@ export default function EnhancedHomeScreen({ navigation }: EnhancedHomeScreenPro
         showsVerticalScrollIndicator={false}
       >
         {/* Quick Stats */}
-        <View style={styles.statsSection}>
+        <View style={[styles.statsSection, styles.contentBlock]}>
           <AnimatedStat
             icon="musical-notes"
             iconColor={theme.colors.primary[500]}
@@ -109,49 +149,45 @@ export default function EnhancedHomeScreen({ navigation }: EnhancedHomeScreenPro
         </View>
 
         {/* Quick Actions */}
-        <View style={styles.section}>
+        <View style={[styles.section, styles.contentBlock]}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.quickActionsScroll}
-          >
-            <QuickAction
-              icon="add-circle"
-              label="Create Band"
-              onPress={() => navigation.navigate('CreateBand')}
-              gradient={theme.gradients.primary}
-            />
-            <QuickAction
-              icon="calendar-outline"
-              label="View Calendar"
-              onPress={() => navigation.navigate('Calendar')}
-              gradient={theme.gradients.secondary}
-            />
-            <QuickAction
-              icon="chatbubbles"
-              label="Messages"
-              onPress={() => navigation.navigate('Messages')}
-              gradient={theme.gradients.purple}
-              badge={3}
-            />
-            <QuickAction
-              icon="cash-outline"
-              label="Payments"
-              onPress={() => navigation.navigate('PaymentLedger')}
-              gradient={theme.gradients.sunset}
-            />
-            <QuickAction
-              icon="videocam"
-              label="Live Session"
-              onPress={() => navigation.navigate('LiveStream')}
-              gradient={theme.gradients.ocean}
-            />
-          </ScrollView>
+          {Platform.OS === 'web' ? (
+            <View style={styles.quickActionsGrid}>
+              {quickActions.map((action) => (
+                <QuickAction
+                  key={action.key}
+                  icon={action.icon}
+                  label={action.label}
+                  onPress={action.onPress}
+                  gradient={action.gradient}
+                  badge={action.badge}
+                  style={styles.quickActionWeb}
+                />
+              ))}
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.quickActionsScroll}
+            >
+              {quickActions.map((action) => (
+                <QuickAction
+                  key={action.key}
+                  icon={action.icon}
+                  label={action.label}
+                  onPress={action.onPress}
+                  gradient={action.gradient}
+                  badge={action.badge}
+                  style={styles.quickActionMobile}
+                />
+              ))}
+            </ScrollView>
+          )}
         </View>
 
         {/* Featured Content */}
-        <View style={styles.section}>
+        <View style={[styles.section, styles.contentBlock]}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Your Bands</Text>
             <TouchableOpacity onPress={() => navigation.navigate('MyBands')}>
@@ -213,7 +249,7 @@ export default function EnhancedHomeScreen({ navigation }: EnhancedHomeScreenPro
         </View>
 
         {/* Upcoming Events */}
-        <View style={styles.section}>
+        <View style={[styles.section, styles.contentBlock]}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Upcoming Events</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Calendar')}>
@@ -277,7 +313,7 @@ export default function EnhancedHomeScreen({ navigation }: EnhancedHomeScreenPro
         </View>
 
         {/* Discover Section */}
-        <View style={styles.section}>
+        <View style={[styles.section, styles.contentBlock]}>
           <Text style={styles.sectionTitle}>Discover</Text>
           <TouchableOpacity
             style={styles.discoverCard}
@@ -365,22 +401,30 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: theme.spacing.base,
+    paddingBottom: theme.spacing['5xl'],
+    paddingHorizontal: theme.spacing.base,
+    alignItems: 'center',
+  },
+  contentBlock: {
+    width: '100%',
+    maxWidth: 1100,
+    alignSelf: 'center',
   },
   statsSection: {
-    paddingHorizontal: theme.spacing.base,
     marginBottom: theme.spacing.base,
+    paddingHorizontal: theme.spacing.base,
   },
   statsSpacer: {
     height: theme.spacing.md,
   },
   section: {
     marginBottom: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.base,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.base,
     marginBottom: theme.spacing.md,
   },
   sectionTitle: {
@@ -394,8 +438,23 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.fontWeights.semibold,
   },
   quickActionsScroll: {
-    paddingHorizontal: theme.spacing.base,
-    gap: theme.spacing.base,
+    paddingHorizontal: theme.spacing.sm,
+    paddingRight: theme.spacing.base,
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+  },
+  quickActionWeb: {
+    width: '18%',
+    minWidth: 120,
+    maxWidth: 160,
+    marginBottom: theme.spacing.base,
+    alignItems: 'center',
+  },
+  quickActionMobile: {
+    marginRight: theme.spacing.base,
   },
   bandStats: {
     flexDirection: 'row',
@@ -477,7 +536,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   discoverCard: {
-    marginHorizontal: theme.spacing.base,
+    marginHorizontal: 0,
     borderRadius: theme.borderRadius.lg,
     overflow: 'hidden',
     ...theme.shadows.md,

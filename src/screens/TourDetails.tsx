@@ -471,11 +471,21 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     paddingHorizontal: theme.spacing.base,
-    paddingVertical: theme.spacing.base,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.base,
     backgroundColor: theme.colors.background.primary,
     borderTopWidth: 1,
     borderTopColor: theme.colors.gray[200],
     gap: theme.spacing.md,
+    ...(Platform.OS === 'ios' && {
+      paddingBottom: Math.max(theme.spacing.base, 20),
+    }),
+    ...(Platform.OS === 'web' && {
+      position: 'sticky' as any,
+      bottom: 0,
+      zIndex: 100,
+      boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.1)',
+    }),
   },
   contactButton: {
     flex: 1,

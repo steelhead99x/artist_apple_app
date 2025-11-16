@@ -7,10 +7,12 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Conversation } from '../types';
 import { formatRelativeTime } from '../utils/dateFormatters';
+import { createShadow } from '../theme';
 
 // Mock conversations
 const MOCK_CONVERSATIONS: Conversation[] = [
@@ -200,6 +202,9 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingBottom: 80,
+    ...(Platform.OS === 'web' && {
+      paddingBottom: 160, // Extra padding for tab bar on web
+    }),
   },
   conversationCard: {
     flexDirection: 'row',
@@ -308,10 +313,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#007AFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    ...createShadow({ width: 0, height: 2 }, 4, 0.3),
+    ...(Platform.OS === 'web' && {
+      bottom: 80, // Account for tab bar height (60px) + padding
+      zIndex: 1000,
+    }),
   },
 });

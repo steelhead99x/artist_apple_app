@@ -7,8 +7,10 @@ module.exports = function(api) {
         allowDeclareFields: true,
         isTSX: true,
         allExtensions: true,
+        onlyRemoveTypeImports: true,
       }],
       'babel-preset-expo',
     ],
+    plugins: [],
   };
 };

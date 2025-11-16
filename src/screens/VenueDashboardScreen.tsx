@@ -20,6 +20,7 @@ import {
 } from '../components/common';
 import { VenueDashboardData, TourDate, Venue, PremiumContent } from '../types';
 import { formatDate, formatTime } from '../utils/dateFormatters';
+import { createShadow } from '../theme';
 
 interface VenueDashboardScreenProps {
   navigation: {
@@ -446,11 +447,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    ...createShadow({ width: 0, height: 1 }, 2, 0.05),
   },
   statValue: {
     fontSize: 24,
@@ -624,11 +621,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    ...createShadow({ width: 0, height: 1 }, 2, 0.05),
   },
   actionLabel: {
     fontSize: 12,

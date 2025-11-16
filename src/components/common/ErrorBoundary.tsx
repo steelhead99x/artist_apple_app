@@ -1,7 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import theme from '../../theme';
+import theme, { createShadow } from '../../theme';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -164,11 +164,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...createShadow({ width: 0, height: 2 }, 4, 0.1),
   },
   buttonText: {
     color: '#FFFFFF',

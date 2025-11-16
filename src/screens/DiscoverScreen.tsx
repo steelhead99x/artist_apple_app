@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { UserType } from '../types';
+import { createShadow } from '../theme';
 
 // Mock data - will be replaced with real API calls
 const MOCK_USERS = [
@@ -278,11 +279,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...createShadow({ width: 0, height: 2 }, 4, 0.1),
   },
   cardHeader: {
     flexDirection: 'row',

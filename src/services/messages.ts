@@ -142,6 +142,7 @@ class MessageService {
 
   /**
    * Upload public key to server for other users to retrieve
+   * Silently fails if endpoint doesn't exist (404) - E2EE is optional
    */
   async uploadPublicKey(): Promise<void> {
     try {
@@ -151,13 +152,38 @@ class MessageService {
       });
     } catch (error: any) {
       // Handle 404 or other errors gracefully - E2EE might not be available on all backends
-      const status = error?.status || error?.response?.status;
-      if (status === 404) {
-        if (__DEV__) console.warn('⚠️ E2EE endpoint not available (404). E2EE features will be limited.');
-        return; // Don't throw - allow login to continue
+      // Check multiple possible error formats (API service, axios, HTML responses)
+      const status = 
+        error?.status || 
+        error?.response?.status || 
+        error?.response?.statusCode;
+      
+      const errorMessage = error?.message || '';
+      const errorData = error?.data || error?.response?.data || '';
+      const errorString = typeof errorData === 'string' ? errorData : JSON.stringify(errorData || '');
+      
+      // Check for 404 status or "Cannot POST" error messages (common in HTML error pages)
+      const is404 = 
+        status === 404 || 
+        errorMessage.includes('404') || 
+        errorMessage.includes('Cannot POST') ||
+        errorString.includes('Cannot POST') ||
+        errorString.includes('404');
+      
+      if (is404) {
+        if (__DEV__) {
+          console.warn('⚠️ E2EE endpoint not available (404). E2EE features will be limited.');
+        }
+        // Silently fail - don't throw error to prevent auth redirects
+        return;
       }
-      // Re-throw other errors
-      throw error;
+      
+      // For other errors, log but don't throw to prevent breaking auth flow
+      if (__DEV__) {
+        console.warn('⚠️ Failed to upload public key (non-critical):', errorMessage || error);
+      }
+      // Don't re-throw - E2EE is optional and shouldn't break login
+      return;
     }
   }
 
@@ -190,10 +216,19 @@ class MessageService {
 
   /**
    * Initialize E2EE for the current user
+   * Never throws - E2EE is optional and shouldn't break auth flow
    */
   async initializeE2EE(): Promise<void> {
-    await encryptionService.initializeKeys();
-    await this.uploadPublicKey();
+    try {
+      await encryptionService.initializeKeys();
+      await this.uploadPublicKey();
+    } catch (error: any) {
+      // E2EE initialization is optional - don't break auth flow
+      if (__DEV__) {
+        console.warn('⚠️ E2EE initialization failed (non-critical):', error?.message || error);
+      }
+      // Silently fail - don't throw
+    }
   }
 
   /**

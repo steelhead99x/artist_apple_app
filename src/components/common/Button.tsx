@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface ButtonProps {
   title: string;
@@ -25,6 +26,7 @@ interface ButtonProps {
   textStyle?: TextStyle;
   accessibilityLabel?: string;
   accessibilityHint?: string;
+  gradient?: readonly [string, string, ...string[]];
 }
 
 /**
@@ -71,6 +73,7 @@ const ButtonComponent = (props: ButtonProps) => {
     textStyle,
     accessibilityLabel,
     accessibilityHint,
+    gradient,
   } = props;
 
   const isDisabled = disabled || loading;
@@ -125,41 +128,8 @@ const ButtonComponent = (props: ButtonProps) => {
     },
   };
 
-  return (
-    <TouchableOpacity
-      style={[
-        styles.button,
-        variantStyles[variant],
-        sizeStyles[size],
-        fullWidth && styles.fullWidth,
-        isDisabled && styles.disabled,
-        Platform.OS === 'web' && !isDisabled && styles.webButton,
-        style,
-      ]}
-      onPress={onPress}
-      disabled={isDisabled}
-      activeOpacity={0.7}
-      accessible={true}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel || title}
-      accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled: isDisabled, busy: loading }}
-      // @ts-ignore - web-specific prop
-      {...(Platform.OS === 'web' && {
-        onMouseEnter: (e: any) => {
-          if (!isDisabled && e.target) {
-            e.target.style.opacity = '0.9';
-            e.target.style.transform = 'translateY(-1px)';
-          }
-        },
-        onMouseLeave: (e: any) => {
-          if (!isDisabled && e.target) {
-            e.target.style.opacity = '1';
-            e.target.style.transform = 'translateY(0)';
-          }
-        },
-      })}
-    >
+  const buttonContent = (
+    <>
       {loading ? (
         <ActivityIndicator color={textColorStyles[variant].color} />
       ) : (
@@ -192,6 +162,84 @@ const ButtonComponent = (props: ButtonProps) => {
           )}
         </View>
       )}
+    </>
+  );
+
+  const buttonStyle = [
+    styles.button,
+    !gradient && variantStyles[variant],
+    sizeStyles[size],
+    fullWidth && styles.fullWidth,
+    isDisabled && styles.disabled,
+    Platform.OS === 'web' && !isDisabled && !gradient && styles.webButton,
+    style,
+  ];
+
+  if (gradient) {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        disabled={isDisabled}
+        activeOpacity={0.7}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel || title}
+        accessibilityHint={accessibilityHint}
+        accessibilityState={{ disabled: isDisabled, busy: loading }}
+        style={[
+          fullWidth && styles.fullWidth,
+          { overflow: 'hidden' },
+          isDisabled && styles.disabled,
+          Platform.OS === 'web' && {
+            cursor: isDisabled ? 'not-allowed' : 'pointer',
+          },
+        ]}
+      >
+        <LinearGradient
+          colors={isDisabled ? ['#94a3b8', '#94a3b8'] : gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[
+            styles.button,
+            sizeStyles[size],
+            fullWidth && styles.fullWidth,
+            { borderWidth: 0 },
+          ]}
+        >
+          {buttonContent}
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <TouchableOpacity
+      style={buttonStyle}
+      onPress={onPress}
+      disabled={isDisabled}
+      activeOpacity={0.7}
+      accessible={true}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel || title}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
+      // @ts-ignore - web-specific prop
+      {...(Platform.OS === 'web' && {
+        onMouseEnter: (e: any) => {
+          if (!isDisabled && e.target) {
+            e.target.style.opacity = '0.9';
+            e.target.style.transform = 'translateY(-1px)';
+          }
+        },
+        onMouseLeave: (e: any) => {
+          if (!isDisabled && e.target) {
+            e.target.style.opacity = '1';
+            e.target.style.transform = 'translateY(0)';
+          }
+        },
+      })}
+    >
+      {buttonContent}
     </TouchableOpacity>
   );
 }

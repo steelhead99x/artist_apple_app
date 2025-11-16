@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { bandService } from '../services';
 import { Input, Button, Card, LoadingSpinner, EmptyState, StatusBadge } from '../components/common';
 import { Band } from '../types';
+import { createShadow } from '../theme';
 
 interface JoinBandScreenProps {
   navigation: {
@@ -388,11 +389,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    ...createShadow({ width: 0, height: 1 }, 2, 0.05),
   },
   toggleButton: {
     flex: 1,

@@ -376,6 +376,7 @@ export default function CreateTour({ navigation }: CreateTourProps) {
           onPress={handleSubmit}
           disabled={loading || !selectedBandId || !selectedVenueId}
           gradient={theme.gradients.primary}
+          fullWidth
         />
       </View>
     </View>
@@ -496,12 +497,22 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: theme.spacing.base,
-    paddingVertical: theme.spacing.base,
+    paddingTop: theme.spacing.md,
+    paddingBottom: theme.spacing.base,
     backgroundColor: theme.colors.background.primary,
     borderTopWidth: 1,
     borderTopColor: theme.colors.gray[200],
+    ...(Platform.OS === 'ios' && {
+      paddingBottom: Math.max(theme.spacing.base, 20),
+    }),
+    ...(Platform.OS === 'web' && {
+      position: 'sticky' as any,
+      bottom: 0,
+      zIndex: 100,
+      boxShadow: '0 -2px 8px rgba(0, 0, 0, 0.1)',
+    }),
   },
   bottomPadding: {
-    height: 20,
+    height: 100,
   },
 });

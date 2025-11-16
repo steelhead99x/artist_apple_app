@@ -13,6 +13,7 @@ import { useAuth } from '../services/AuthContext';
 import { bandService } from '../services';
 import { Card, LoadingSpinner, ErrorMessage, EmptyState, StatusBadge } from '../components/common';
 import { ArtistDashboardData, Band, TourDate } from '../types';
+import { createShadow } from '../theme';
 
 interface ArtistDashboardScreenProps {
   navigation: {
@@ -371,11 +372,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    ...createShadow({ width: 0, height: 1 }, 2, 0.05),
   },
   statValue: {
     fontSize: 24,
@@ -538,11 +535,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    ...createShadow({ width: 0, height: 1 }, 2, 0.05),
   },
   actionLabel: {
     fontSize: 12,

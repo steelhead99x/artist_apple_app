@@ -1,4 +1,5 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -85,9 +86,22 @@ export default function TabNavigator() {
           backgroundColor: theme.colors.background.primary,
           borderTopWidth: 1,
           borderTopColor: theme.colors.gray[200],
-          paddingBottom: 8,
-          paddingTop: 8,
-          height: 60,
+          paddingBottom: Platform.OS === 'web' ? 18 : 8,
+          paddingTop: Platform.OS === 'web' ? 12 : 8,
+          height: Platform.OS === 'web' ? 78 : 60,
+          ...(Platform.OS === 'web' && {
+            boxShadow: '0 -4px 12px rgba(15, 23, 42, 0.08)',
+            position: 'sticky' as const,
+            bottom: 0,
+            zIndex: 200,
+          }),
+        },
+        tabBarLabelStyle: {
+          marginTop: 4,
+          marginBottom: Platform.OS === 'web' ? 2 : 0,
+        },
+        tabBarIconStyle: {
+          marginBottom: Platform.OS === 'web' ? 4 : 0,
         },
         headerStyle: {
           backgroundColor: theme.colors.background.primary,

@@ -7,6 +7,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   Alert,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../services/AuthContext';
@@ -21,6 +22,7 @@ import {
 } from '../components/common';
 import { TourDate } from '../types';
 import { formatDate, formatLongDate, formatTime } from '../utils/dateFormatters';
+import { createShadow } from '../theme';
 
 type ViewType = 'upcoming' | 'past';
 
@@ -477,13 +479,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#6366f1',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
+    ...createShadow({ width: 0, height: 4 }, 6, 0.3),
+    ...(Platform.OS === 'web' && {
+      bottom: 80, // Account for tab bar height (60px) + padding
+      zIndex: 1000,
+    }),
   },
   bottomPadding: {
     height: 80,
+    ...(Platform.OS === 'web' && {
+      height: 160, // Extra padding for tab bar on web
+    }),
   },
 });

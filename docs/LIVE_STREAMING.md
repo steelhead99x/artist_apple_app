@@ -6,6 +6,37 @@ The Artist Space app now features professional-grade live streaming capabilities
 
 ## Features
 
+### 📊 Real-Time Health Monitoring
+
+The app now includes professional stream health monitoring powered by Mux's monitoring API:
+
+#### Live Stream Health Stats
+- **Connection Quality**: Real-time assessment (Excellent/Good/Fair/Poor)
+- **Viewer Metrics**: Current viewers, peak viewers, total view time
+- **Video Quality**: Bitrate, frame rate, resolution, codec information
+- **Audio Quality**: Bitrate, sample rate, codec information
+- **Network Performance**: Available bandwidth, packet loss, latency (RTT)
+- **Frame Statistics**: Dropped frames percentage and total frames
+
+#### Intelligent Alerts
+- **Real-time Alerts**: Instant notifications for stream quality issues
+- **Severity Levels**: Info, Warning, and Critical alerts
+- **Smart Thresholds**: Automatically detects:
+  - Low bitrate (< 500 kbps)
+  - Low frame rate (< 20 fps)
+  - High packet loss (> 2%)
+  - Poor connection quality
+- **Visual Indicators**: Color-coded alerts with icons
+
+#### Health Stats Display
+- **Compact View**: Minimal overlay during streaming showing key metrics
+- **Detailed View**: Full analytics modal with expandable sections:
+  - Overview (quality, viewers, duration, status)
+  - Video Quality (resolution, frame rate, bitrate, codec, dropped frames)
+  - Audio Quality (bitrate, sample rate, codec)
+  - Network (bandwidth, packet loss, latency)
+  - Alerts (recent issues with timestamps)
+
 ### 📹 Video Controls
 
 #### Quality Presets

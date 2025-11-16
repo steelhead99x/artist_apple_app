@@ -16,13 +16,16 @@ import { Camera } from 'expo-camera';
 import apiService from '../services/api';
 import theme from '../theme';
 import StreamSettings from '../components/StreamSettings';
+import StreamHealthStatsComponent from '../components/StreamHealthStats';
 import mediaStreamService from '../services/mediaStream';
+import streamHealthMonitor from '../services/streamHealthMonitor';
 import {
   AudioConstraints,
   VideoConstraints,
   StreamQuality,
   QUALITY_PRESETS,
 } from '../types/mediaStream';
+import { StreamHealthStats, StreamHealthAlert } from '../types/muxStreaming';
 
 interface LiveStreamProps {
   navigation: {
@@ -64,9 +67,14 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
   const [cameraType, setCameraType] = useState<any>(getCameraType());
   const [showCameraSettings, setShowCameraSettings] = useState(false);
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+  const [showHealthStats, setShowHealthStats] = useState(false);
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   const [selectedAudioDevice, setSelectedAudioDevice] = useState<string | null>(null);
+
+  // Health monitoring
+  const [healthStats, setHealthStats] = useState<StreamHealthStats | null>(null);
+  const [healthAlerts, setHealthAlerts] = useState<StreamHealthAlert[]>([]);
 
   // Advanced stream settings
   const [streamQuality, setStreamQuality] = useState<StreamQuality>('high');
@@ -93,7 +101,21 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
 
   useEffect(() => {
     requestPermissions();
-    
+
+    // Set up health monitoring callbacks
+    streamHealthMonitor.onStatsUpdate((streamId, stats) => {
+      setHealthStats(stats);
+    });
+
+    streamHealthMonitor.onAlert((streamId, alert) => {
+      setHealthAlerts((prev) => [...prev, alert]);
+
+      // Show critical alerts to user
+      if (alert.severity === 'critical') {
+        Alert.alert('Stream Alert', alert.message);
+      }
+    });
+
     // Cleanup media stream on unmount
     return () => {
       if (mediaStreamRef.current) {
@@ -108,8 +130,25 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
           video.pause();
         }
       }
+      // Stop health monitoring
+      if (stream) {
+        streamHealthMonitor.stopMonitoring(stream.id);
+      }
     };
   }, []);
+
+  // Start/stop health monitoring when streaming status changes
+  useEffect(() => {
+    if (stream && isStreaming) {
+      // Start monitoring with 5-second interval
+      streamHealthMonitor.startMonitoring(stream.id, 5000);
+    } else if (stream && !isStreaming) {
+      // Stop monitoring when stream ends
+      streamHealthMonitor.stopMonitoring(stream.id);
+      setHealthStats(null);
+      setHealthAlerts([]);
+    }
+  }, [stream, isStreaming]);
 
   // Set up video stream when ref becomes available (web only)
   useEffect(() => {
@@ -761,6 +800,16 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
                       <Text style={styles.liveText}>LIVE</Text>
                     </View>
                   )}
+                  {/* Compact Health Stats */}
+                  {isStreaming && healthStats && (
+                    <View style={styles.compactHealthStats}>
+                      <StreamHealthStatsComponent
+                        stats={healthStats}
+                        alerts={healthAlerts}
+                        compact={true}
+                      />
+                    </View>
+                  )}
                   {/* Camera Controls */}
                   <View style={styles.cameraControls}>
                     <TouchableOpacity
@@ -775,6 +824,14 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
                         onPress={() => setShowAdvancedSettings(true)}
                       >
                         <Ionicons name="options" size={24} color="white" />
+                      </TouchableOpacity>
+                    )}
+                    {isStreaming && (
+                      <TouchableOpacity
+                        style={styles.cameraControlButton}
+                        onPress={() => setShowHealthStats(true)}
+                      >
+                        <Ionicons name="analytics" size={24} color="white" />
                       </TouchableOpacity>
                     )}
                   </View>
@@ -923,6 +980,20 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
           onApply={handleApplySettings}
           currentAudioDevice={selectedAudioDevice}
           currentVideoDevice={selectedCameraId}
+        />
+      </Modal>
+
+      {/* Health Stats Modal */}
+      <Modal
+        visible={showHealthStats}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowHealthStats(false)}
+      >
+        <StreamHealthStatsComponent
+          stats={healthStats}
+          alerts={healthAlerts}
+          onClose={() => setShowHealthStats(false)}
         />
       </Modal>
 
@@ -1390,5 +1461,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: theme.typography.fontWeights.semibold,
     color: 'white',
+  },
+  compactHealthStats: {
+    position: 'absolute',
+    bottom: theme.spacing.md,
+    left: theme.spacing.md,
+    right: theme.spacing.md,
   },
 });

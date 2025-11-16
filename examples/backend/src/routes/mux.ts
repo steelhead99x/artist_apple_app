@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { query } from '../db.js';
 import { authenticateToken } from '../utils/auth.js';
 import { getUserBandSubscriptionLevel } from '../utils/bandSubscription.js';
+import jwt from 'jsonwebtoken';
 
 interface MuxLiveStreamResponse {
   data: {
@@ -299,6 +300,33 @@ router.get('/live-streams/:id/status', authenticateToken, async (req, res) => {
   }
 });
 
+// Helper function to generate JWT for Live Stream Health Stats API
+function generateMuxHealthStatsToken(liveStreamId: string): string {
+  const signingKey = process.env.MUX_SIGNING_KEY_ID;
+  const privateKeyBase64 = process.env.MUX_SIGNING_KEY_PRIVATE;
+
+  if (!signingKey || !privateKeyBase64) {
+    throw new Error('Mux signing key not configured');
+  }
+
+  // Decode the base64 private key
+  const privateKey = Buffer.from(privateKeyBase64, 'base64').toString('utf-8');
+
+  // Create JWT with required claims
+  const payload = {
+    sub: liveStreamId,              // Live stream ID
+    aud: 'live_stream_id',          // Audience type
+    exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60), // Expires in 24 hours
+    kid: signingKey,                // Key ID
+  };
+
+  // Sign the JWT using RS256 algorithm
+  return jwt.sign(payload, privateKey, {
+    algorithm: 'RS256',
+    keyid: signingKey,
+  });
+}
+
 // GET /api/mux/live-streams/:id/monitoring - Get real-time health stats (Beta API)
 router.get('/live-streams/:id/monitoring', authenticateToken, async (req, res) => {
   try {
@@ -314,71 +342,104 @@ router.get('/live-streams/:id/monitoring', authenticateToken, async (req, res) =
       return res.status(404).json({ error: 'Stream not found' });
     }
 
-    // Get Mux monitoring data (Beta API)
-    // This provides real-time health metrics
-    const monitoringResponse = await fetch(`https://api.mux.com/video/v1/live-streams/${id}`, {
+    // Generate JWT for health stats API
+    let healthToken: string;
+    try {
+      healthToken = generateMuxHealthStatsToken(id);
+    } catch (error) {
+      console.error('Failed to generate health stats token:', error);
+      // Fall back to basic stream info without health stats
+      return res.json({
+        data: {
+          status: 'unknown',
+          health: {
+            status: 'unknown',
+            issues: ['Health monitoring not configured']
+          }
+        }
+      });
+    }
+
+    // Get real-time health stats from Mux (updates every 5 seconds)
+    const healthResponse = await fetch(`https://stats.mux.com/live-stream-health?token=${healthToken}`);
+
+    if (!healthResponse.ok) {
+      const error = await healthResponse.text();
+      console.error('Mux health stats API error:', error);
+      return res.status(500).json({ error: 'Failed to get stream health stats' });
+    }
+
+    const healthData = await healthResponse.json();
+
+    // Also get basic stream info
+    const streamInfoResponse = await fetch(`https://api.mux.com/video/v1/live-streams/${id}`, {
       method: 'GET',
       headers: {
         'Authorization': `Basic ${Buffer.from(`${process.env.MUX_TOKEN_ID}:${process.env.MUX_TOKEN_SECRET}`).toString('base64')}`,
       }
     });
 
-    if (!monitoringResponse.ok) {
-      const error = await monitoringResponse.text();
-      console.error('Mux monitoring API error:', error);
-      return res.status(500).json({ error: 'Failed to get stream monitoring data' });
+    let streamInfo: any = null;
+    if (streamInfoResponse.ok) {
+      const streamInfoData = await streamInfoResponse.json();
+      streamInfo = streamInfoData.data;
     }
 
-    const monitoringData = await monitoringResponse.json();
+    // Extract health metrics
+    const ingestHealth = healthData.data?.[0]?.ingest_health || null;
 
-    // Get simulcast targets if any
-    const simulcastResponse = await fetch(`https://api.mux.com/video/v1/live-streams/${id}/simulcast-targets`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Basic ${Buffer.from(`${process.env.MUX_TOKEN_ID}:${process.env.MUX_TOKEN_SECRET}`).toString('base64')}`,
-      }
-    }).catch(() => null);
-
-    const simulcastData = simulcastResponse?.ok ? await simulcastResponse.json() : null;
+    // Determine connection quality from status
+    const statusToQuality: Record<string, 'excellent' | 'good' | 'fair' | 'poor'> = {
+      'excellent': 'excellent',
+      'good': 'good',
+      'poor': 'fair',
+      'unknown': 'poor',
+    };
 
     // Construct health monitoring response
     res.json({
       data: {
-        status: monitoringData.data.status,
-        active_asset_id: monitoringData.data.active_asset_id,
-        current_viewer_count: monitoringData.data.recent_asset_ids?.length || 0,
-        max_viewer_count: monitoringData.data.max_continuous_duration || 0,
+        status: streamInfo?.status || 'unknown',
+        active_asset_id: streamInfo?.active_asset_id,
+        current_viewer_count: 0, // Would require Mux Data API
+        max_viewer_count: 0,
 
-        // Stream metrics - extracted from Mux response
-        stream_metrics: {
-          video_bitrate: 0, // Would be populated from active stream data
+        // Stream health metrics (from Live Stream Health Stats API)
+        stream_metrics: ingestHealth ? {
+          stream_drift_session_avg: ingestHealth.stream_drift_session_avg,
+          stream_drift_deviation: ingestHealth.stream_drift_deviation_from_rolling_avg,
+          status: ingestHealth.status,
+          updated_at: ingestHealth.updated_at,
+          // These require additional API calls or metadata
+          video_bitrate: 0,
           audio_bitrate: 0,
           frame_rate: 0,
           width: 0,
           height: 0,
-          keyframe_interval: 0,
-        },
+        } : null,
 
         // Health indicators
         health: {
-          status: monitoringData.data.status === 'active' ? 'healthy' : 'idle',
-          issues: [],
+          status: ingestHealth?.status || 'unknown',
+          connection_quality: ingestHealth ? statusToQuality[ingestHealth.status] || 'poor' : 'poor',
+          issues: ingestHealth ? [] : ['No health data available'],
+          metrics: {
+            stream_drift: ingestHealth?.stream_drift_session_avg || 0,
+            deviation: ingestHealth?.stream_drift_deviation_from_rolling_avg || 0,
+          }
         },
 
         // Recording status
         recording: {
-          enabled: monitoringData.data.new_asset_settings?.mp4_support === 'standard',
+          enabled: streamInfo?.new_asset_settings?.mp4_support === 'standard',
           duration: 0,
         },
 
         // Additional metadata
-        playback_ids: monitoringData.data.playback_ids,
-        reconnect_window: monitoringData.data.reconnect_window,
-        latency_mode: monitoringData.data.latency_mode,
-        test_mode: monitoringData.data.test,
-
-        // Simulcast information
-        simulcast_targets: simulcastData?.data || [],
+        playback_ids: streamInfo?.playback_ids || [],
+        reconnect_window: streamInfo?.reconnect_window || 0,
+        latency_mode: streamInfo?.latency_mode || 'standard',
+        test_mode: streamInfo?.test || false,
       }
     });
   } catch (error) {

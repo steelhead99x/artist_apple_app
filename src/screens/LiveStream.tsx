@@ -9,11 +9,20 @@ import {
   ScrollView,
   ActivityIndicator,
   Platform,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Camera } from 'expo-camera';
 import apiService from '../services/api';
 import theme from '../theme';
+import StreamSettings from '../components/StreamSettings';
+import mediaStreamService from '../services/mediaStream';
+import {
+  AudioConstraints,
+  VideoConstraints,
+  StreamQuality,
+  QUALITY_PRESETS,
+} from '../types/mediaStream';
 
 interface LiveStreamProps {
   navigation: {
@@ -54,8 +63,29 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
   };
   const [cameraType, setCameraType] = useState<any>(getCameraType());
   const [showCameraSettings, setShowCameraSettings] = useState(false);
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
   const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
+  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string | null>(null);
+
+  // Advanced stream settings
+  const [streamQuality, setStreamQuality] = useState<StreamQuality>('high');
+  const [audioConstraints, setAudioConstraints] = useState<AudioConstraints>({
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true,
+    sampleRate: 48000,
+    channelCount: 2,
+  });
+  const [videoConstraints, setVideoConstraints] = useState<VideoConstraints>({
+    width: { ideal: 1920 },
+    height: { ideal: 1080 },
+    frameRate: { ideal: 30 },
+    facingMode: 'user',
+    focusMode: 'continuous',
+    exposureMode: 'continuous',
+    whiteBalanceMode: 'continuous',
+  });
 
   const cameraRef = useRef<Camera>(null);
   const videoRef = useRef<any>(null); // HTMLVideoElement for web, but React Native doesn't have this type
@@ -109,32 +139,44 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
     try {
       // On web, permissions are handled differently
       if (Platform.OS === 'web') {
-        // Request media permissions for web
+        // Request media permissions for web with advanced constraints
         try {
-          // First request with default camera to get permissions
-          const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: 'user' }, 
-            audio: true 
+          // Initialize media stream service
+          await mediaStreamService.initialize();
+
+          // Create stream with current constraints
+          const stream = await mediaStreamService.createStream({
+            audio: audioConstraints,
+            video: {
+              ...videoConstraints,
+              deviceId: selectedCameraId ? { exact: selectedCameraId } as any : undefined,
+            },
+            quality: streamQuality,
           });
-          
+
           // Store stream for preview
           mediaStreamRef.current = stream;
-          
+
           setHasPermission(true);
           setHasMicPermission(true);
-          
-          // Now enumerate devices to get camera list
-          const devices = await navigator.mediaDevices.enumerateDevices();
-          const videoDevices = devices.filter(device => device.kind === 'videoinput');
-          setAvailableCameras(videoDevices);
-          
+
+          // Get available devices
+          const videoDevices = mediaStreamService.getVideoDevices();
+          const audioDevices = mediaStreamService.getAudioDevices();
+
+          setAvailableCameras(videoDevices as MediaDeviceInfo[]);
+
           if (videoDevices.length > 0 && !selectedCameraId) {
             // Try to find front-facing camera first, otherwise use first available
-            const frontCamera = videoDevices.find(cam => 
-              cam.label.toLowerCase().includes('front') || 
+            const frontCamera = videoDevices.find(cam =>
+              cam.label.toLowerCase().includes('front') ||
               cam.label.toLowerCase().includes('user')
             );
             setSelectedCameraId(frontCamera?.deviceId || videoDevices[0].deviceId);
+          }
+
+          if (audioDevices.length > 0 && !selectedAudioDevice) {
+            setSelectedAudioDevice(audioDevices[0].deviceId);
           }
         } catch (error) {
           console.error('Web permission error:', error);
@@ -306,6 +348,48 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
     }
   };
 
+  const handleApplySettings = async (config: {
+    audio: AudioConstraints;
+    video: VideoConstraints;
+    quality: StreamQuality;
+  }) => {
+    try {
+      setAudioConstraints(config.audio);
+      setVideoConstraints(config.video);
+      setStreamQuality(config.quality);
+
+      if (Platform.OS === 'web') {
+        // Update stream with new settings
+        const stream = await mediaStreamService.createStream({
+          audio: config.audio,
+          video: config.video,
+          quality: config.quality,
+        });
+
+        mediaStreamRef.current = stream;
+
+        // Update video element
+        if (videoRef.current) {
+          const video = videoRef.current as HTMLVideoElement;
+          video.srcObject = stream;
+          setTimeout(() => {
+            video.play().catch((err) => {
+              if (err.name !== 'AbortError') {
+                console.error('Failed to play video after settings update:', err);
+              }
+            });
+          }, 100);
+        }
+      }
+
+      setShowAdvancedSettings(false);
+      Alert.alert('Success', 'Stream settings updated successfully');
+    } catch (error) {
+      console.error('Failed to apply settings:', error);
+      Alert.alert('Error', 'Failed to apply settings. Please try again.');
+    }
+  };
+
   const switchCamera = async () => {
     if (Platform.OS === 'web') {
       // Switch camera on web
@@ -319,18 +403,18 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
         const currentIndex = availableCameras.findIndex(cam => cam.deviceId === selectedCameraId);
         const nextIndex = (currentIndex + 1) % availableCameras.length;
         const nextCamera = availableCameras[nextIndex];
-        
+
         if (nextCamera) {
           setSelectedCameraId(nextCamera.deviceId);
-          
-          // Get new stream with selected camera
-          const newStream = await navigator.mediaDevices.getUserMedia({
-            video: { deviceId: { exact: nextCamera.deviceId } },
-            audio: true
-          });
-          
+
+          // Get new stream with selected camera using advanced settings
+          const newStream = await mediaStreamService.switchCamera(
+            nextCamera.deviceId,
+            videoConstraints
+          );
+
           mediaStreamRef.current = newStream;
-          
+
           // Update video element with new stream
           if (videoRef.current) {
             const video = videoRef.current as HTMLVideoElement;
@@ -506,12 +590,12 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
                       >
                         <Ionicons name="camera-reverse" size={24} color="white" />
                       </TouchableOpacity>
-                      {availableCameras.length > 1 && (
+                      {Platform.OS === 'web' && (
                         <TouchableOpacity
                           style={styles.cameraControlButton}
-                          onPress={() => setShowCameraSettings(!showCameraSettings)}
+                          onPress={() => setShowAdvancedSettings(true)}
                         >
-                          <Ionicons name="settings" size={24} color="white" />
+                          <Ionicons name="options" size={24} color="white" />
                         </TouchableOpacity>
                       )}
                     </View>
@@ -685,12 +769,12 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
                     >
                       <Ionicons name="camera-reverse" size={24} color="white" />
                     </TouchableOpacity>
-                    {availableCameras.length > 1 && (
+                    {Platform.OS === 'web' && (
                       <TouchableOpacity
                         style={styles.cameraControlButton}
-                        onPress={() => setShowCameraSettings(!showCameraSettings)}
+                        onPress={() => setShowAdvancedSettings(true)}
                       >
-                        <Ionicons name="settings" size={24} color="white" />
+                        <Ionicons name="options" size={24} color="white" />
                       </TouchableOpacity>
                     )}
                   </View>
@@ -825,6 +909,31 @@ export default function LiveStream({ navigation }: LiveStreamProps) {
 
           <View style={styles.bottomPadding} />
         </ScrollView>
+      )}
+
+      {/* Advanced Settings Modal */}
+      <Modal
+        visible={showAdvancedSettings}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowAdvancedSettings(false)}
+      >
+        <StreamSettings
+          onClose={() => setShowAdvancedSettings(false)}
+          onApply={handleApplySettings}
+          currentAudioDevice={selectedAudioDevice}
+          currentVideoDevice={selectedCameraId}
+        />
+      </Modal>
+
+      {/* Quality Indicator Badge */}
+      {Platform.OS === 'web' && (
+        <View style={styles.qualityBadge}>
+          <Ionicons name="videocam" size={16} color="white" />
+          <Text style={styles.qualityBadgeText}>
+            {QUALITY_PRESETS[streamQuality].name}
+          </Text>
+        </View>
       )}
     </View>
   );
@@ -1264,5 +1373,22 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 20,
+  },
+  qualityBadge: {
+    position: 'absolute',
+    top: 70,
+    right: theme.spacing.base,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: theme.borderRadius.full,
+    gap: 6,
+  },
+  qualityBadgeText: {
+    fontSize: 12,
+    fontWeight: theme.typography.fontWeights.semibold,
+    color: 'white',
   },
 });
